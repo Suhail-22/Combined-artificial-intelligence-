@@ -7,7 +7,7 @@ import {
   Save, FolderPlus, Download, Play, Copy, Folder, Trash2, FileJson, 
   Menu, Bug, FileCode, BookOpen, TestTube, Eraser, Archive, ExternalLink,
   Mic, Paperclip, Plus, History, Settings, Moon, Sun, Monitor, Languages, Eye, AlertTriangle,
-  User, Bot, Clock, ChevronDown, ChevronUp, Share2
+  User, Bot, Clock, ChevronDown, ChevronUp, Share2, Lightbulb
 } from 'lucide-react';
 
 // --- Types ---
@@ -84,6 +84,7 @@ const TRANSLATIONS = {
     newFolder: "New Folder",
     folderName: "Folder Name",
     save: "Save",
+    saveToFolder: "Save to Folder",
     exportBackup: "Export Backup",
     importBackup: "Import Backup",
     downloadZip: "Download Project (ZIP)",
@@ -105,13 +106,22 @@ const TRANSLATIONS = {
     preview: "Preview",
     you: "You",
     ai: "Tri-Coder",
+    suggestions: "Suggestions",
+    copy: "Copy",
+    download: "Download",
     tools: {
       debug: "Debug",
       refactor: "Refactor",
       explain: "Explain",
       test: "Unit Test",
       convert: "Convert"
-    }
+    },
+    suggestedPrompts: [
+      "Explain logic step-by-step",
+      "Optimize this code",
+      "Add detailed comments",
+      "Write unit tests"
+    ]
   },
   ar: {
     appTitle: "المبرمج الثلاثي",
@@ -123,6 +133,7 @@ const TRANSLATIONS = {
     newFolder: "مجلد جديد",
     folderName: "اسم المجلد",
     save: "حفظ",
+    saveToFolder: "حفظ في مجلد",
     exportBackup: "تصدير نسخة احتياطية",
     importBackup: "استعادة نسخة احتياطية",
     downloadZip: "تنزيل المشروع (ZIP)",
@@ -144,13 +155,22 @@ const TRANSLATIONS = {
     preview: "معاينة",
     you: "أنت",
     ai: "المبرمج الثلاثي",
+    suggestions: "اقتراحات",
+    copy: "نسخ",
+    download: "تنزيل",
     tools: {
       debug: "تصحيح",
       refactor: "تحسين",
       explain: "شرح",
       test: "اختبار",
       convert: "تحويل"
-    }
+    },
+    suggestedPrompts: [
+      "اشرح المنطق خطوة بخطوة",
+      "حسن أداء الكود",
+      "أضف تعليقات توضيحية",
+      "اكتب اختبارات للكود"
+    ]
   }
 };
 
@@ -187,7 +207,7 @@ const AI_MODELS_CONFIG = [
 // --- Error Boundary ---
 
 interface ErrorBoundaryProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 interface ErrorBoundaryState {
@@ -196,10 +216,7 @@ interface ErrorBoundaryState {
 }
 
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
+  state: ErrorBoundaryState = { hasError: false, error: null };
 
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
@@ -278,26 +295,6 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ content, folders, onSaveSnippet, 
                   <button onClick={() => navigator.clipboard.writeText(code)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-500" title="Copy">
                     <Copy className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => downloadFile(`code.${lang}`, code)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-500" title="Download">
-                    <Download className="w-3.5 h-3.5" />
-                  </button>
-                  {/* Save Menu */}
-                  <div className="relative group">
-                    <button className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-500">
-                      <Save className="w-3.5 h-3.5" />
-                    </button>
-                    <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded shadow-xl hidden group-hover:block z-50 max-h-40 overflow-y-auto">
-                       {folders.length === 0 ? (
-                         <div className="p-2 text-[10px] text-slate-500">No folders</div>
-                       ) : (
-                         folders.map(f => (
-                           <button key={f.id} onClick={() => onSaveSnippet(f.id, code, lang)} className="w-full text-left px-3 py-2 text-[10px] hover:bg-slate-100 dark:hover:bg-slate-700 truncate">
-                             {f.name}
-                           </button>
-                         ))
-                       )}
-                    </div>
-                  </div>
                 </div>
               </div>
               <pre className="p-3 overflow-x-auto text-xs font-mono text-slate-200 bg-transparent scrollbar-thin">
@@ -320,9 +317,10 @@ interface ChatMessageBubbleProps {
   onPreview: (code: string) => void;
   t: any;
   onCompare: (msg: ChatMessage) => void;
+  onSuggestionClick: (text: string) => void;
 }
 
-const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang, folders, onSaveSnippet, onPreview, t, onCompare }) => {
+const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang, folders, onSaveSnippet, onPreview, t, onCompare, onSuggestionClick }) => {
   const isUser = msg.role === 'user';
   const [activeTab, setActiveTab] = useState(0);
 
@@ -347,6 +345,9 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang, folder
   }
 
   // AI Message
+  const currentModelData = msg.modelsData?.[activeTab];
+  const isFinished = !currentModelData?.loading && !currentModelData?.error && currentModelData?.text;
+
   return (
     <div className="flex justify-start mb-8 animate-in slide-in-from-bottom-2 fade-in duration-500 delay-100 w-full">
       <div className="w-full max-w-5xl">
@@ -412,16 +413,79 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang, folder
                     })}
                  </div>
 
-                 {/* Footer Actions */}
-                 <div className="bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 p-2 flex justify-end">
-                    <button 
-                      onClick={() => onCompare(msg)}
-                      className="text-xs flex items-center gap-1 px-3 py-1.5 bg-yellow-400 hover:bg-yellow-300 text-slate-900 rounded-full font-bold transition-colors shadow-sm"
-                    >
-                       <Scale className="w-3.5 h-3.5" /> {t.judge}
-                    </button>
-                 </div>
+                 {/* Footer Actions (Visible if content exists) */}
+                 {isFinished && (
+                   <div className="bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 p-2 flex flex-wrap items-center justify-between gap-2">
+                      
+                      <div className="flex items-center gap-2">
+                        {/* Copy Full Text */}
+                        <button 
+                          onClick={() => navigator.clipboard.writeText(currentModelData?.text || '')}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                        >
+                          <Copy className="w-3.5 h-3.5" /> {t.copy}
+                        </button>
+
+                        {/* Download Full Text */}
+                        <button 
+                           onClick={() => downloadFile(`response_${msg.id}.txt`, currentModelData?.text || '')}
+                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                        >
+                           <Download className="w-3.5 h-3.5" /> {t.download}
+                        </button>
+                        
+                        {/* Save to Folder (Entire Message) */}
+                        <div className="relative group">
+                          <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors">
+                            <FolderPlus className="w-3.5 h-3.5" /> {t.saveToFolder}
+                          </button>
+                          <div className="absolute left-0 bottom-full mb-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl hidden group-hover:block z-50">
+                             {folders.length === 0 ? (
+                               <div className="p-2 text-[10px] text-slate-500 italic">No folders</div>
+                             ) : (
+                               folders.map(f => (
+                                 <button 
+                                   key={f.id} 
+                                   onClick={() => onSaveSnippet(f.id, currentModelData?.text || '', 'txt')} 
+                                   className="w-full text-left px-3 py-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-700 truncate first:rounded-t-lg last:rounded-b-lg"
+                                 >
+                                   {f.name}
+                                 </button>
+                               ))
+                             )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={() => onCompare(msg)}
+                        className="text-xs flex items-center gap-1 px-3 py-1.5 bg-yellow-400 hover:bg-yellow-300 text-slate-900 rounded-full font-bold transition-colors shadow-sm"
+                      >
+                         <Scale className="w-3.5 h-3.5" /> {t.judge}
+                      </button>
+                   </div>
+                 )}
               </div>
+
+              {/* Suggestions (Lamp Icon) */}
+              {isFinished && (
+                <div className="mt-3 flex items-start gap-2 animate-in fade-in slide-in-from-top-1 duration-500">
+                  <div className="mt-1">
+                    <Lightbulb className="w-4 h-4 text-yellow-500 fill-yellow-500/20" />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {t.suggestedPrompts.map((prompt: string, idx: number) => (
+                      <button
+                        key={idx}
+                        onClick={() => onSuggestionClick(prompt)}
+                        className="px-3 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-xs text-slate-600 dark:text-slate-300 hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-400 transition-colors shadow-sm"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Comparison Result if exists */}
               {msg.comparison && (
@@ -534,13 +598,9 @@ const App = () => {
     setAttachedFile(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if ((!prompt.trim() && !attachedFile) || !ai) return;
+  const executeSubmit = (text: string, file: any) => {
+    if ((!text.trim() && !file) || !ai) return;
 
-    const currentPrompt = prompt;
-    const currentFile = attachedFile;
-    
     // 1. Clear Input immediately
     setPrompt('');
     setAttachedFile(null);
@@ -550,7 +610,7 @@ const App = () => {
     const newUserMsg: ChatMessage = {
       id: userMsgId,
       role: 'user',
-      content: (currentFile ? `[File: ${currentFile.name}] ` : '') + currentPrompt,
+      content: (file ? `[File: ${file.name}] ` : '') + text,
       timestamp: Date.now()
     };
 
@@ -571,8 +631,13 @@ const App = () => {
 
     // 4. Trigger Generations
     AI_MODELS_CONFIG.forEach((config, index) => {
-      generateForModel(index, currentPrompt, currentFile, aiMsgId, config.baseSystemInstruction);
+      generateForModel(index, text, file, aiMsgId, config.baseSystemInstruction);
     });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    executeSubmit(prompt, attachedFile);
   };
 
   const generateForModel = async (index: number, userPrompt: string, file: any, msgId: string, baseSysInstruction: string) => {
@@ -626,11 +691,6 @@ const App = () => {
 
   const handleCompare = async (msg: ChatMessage) => {
     if (!ai || !msg.modelsData) return;
-    
-    // Set loading state for comparison inside the message if I had a field for it, 
-    // but for simplicity I'll just trigger it and update when done.
-    // Ideally add a 'comparing' boolean to ChatMessage type.
-    
     try {
       const promptText = `
         Compare these 3 solutions:
@@ -788,6 +848,7 @@ const App = () => {
                   onSaveSnippet={handleSaveSnippet} 
                   onPreview={setPreviewContent}
                   onCompare={handleCompare}
+                  onSuggestionClick={(txt) => executeSubmit(txt, null)}
                   t={t} 
                />
              ))
