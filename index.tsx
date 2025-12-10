@@ -7,7 +7,8 @@ import {
   Save, FolderPlus, Download, Play, Copy, Folder, Trash2, FileJson, 
   Menu, Bug, FileCode, BookOpen, TestTube, Eraser, Archive, ExternalLink,
   Mic, Paperclip, Plus, History, Settings, Moon, Sun, Monitor, Languages, Eye, AlertTriangle,
-  User, Bot, Clock, ChevronDown, ChevronUp, Share2, Lightbulb, MessageCircle, Upload, Users, Star
+  User, Bot, Clock, ChevronDown, ChevronUp, Share2, Lightbulb, MessageCircle, Upload, Users, Star,
+  WifiOff
 } from 'lucide-react';
 
 // --- Types ---
@@ -138,7 +139,9 @@ const TRANSLATIONS = {
       "Optimize this code",
       "Add detailed comments",
       "Write unit tests"
-    ]
+    ],
+    apiKeyMissing: "API Key Missing",
+    apiKeyMissingDesc: "Check deployment settings."
   },
   ar: {
     appTitle: "المبرمج الثلاثي",
@@ -192,7 +195,9 @@ const TRANSLATIONS = {
       "حسن أداء الكود",
       "أضف تعليقات توضيحية",
       "اكتب اختبارات للكود"
-    ]
+    ],
+    apiKeyMissing: "مفتاح الربط مفقود",
+    apiKeyMissingDesc: "تحقق من إعدادات النشر."
   }
 };
 
@@ -242,8 +247,6 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
     super(props);
     this.state = { hasError: false, error: null };
   }
-
-  public state: ErrorBoundaryState;
 
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
@@ -655,11 +658,30 @@ const App = () => {
   // Safe initialization of AI
   const ai = useMemo(() => {
     try {
-      if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-         return new GoogleGenAI({ apiKey: process.env.API_KEY });
+      let key = '';
+      
+      // 1. Try process.env (Node/Webpack/standard)
+      try {
+         if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+            key = process.env.API_KEY;
+         }
+      } catch(e) {}
+      
+      // 2. Try import.meta.env (Vite/ESM) - often used in Vercel deployments
+      if (!key) {
+        try {
+          // @ts-ignore
+          if (typeof import.meta !== 'undefined' && import.meta.env) {
+             // @ts-ignore
+             key = import.meta.env.API_KEY || import.meta.env.VITE_API_KEY || '';
+          }
+        } catch (e) {}
+      }
+
+      if (key) {
+         return new GoogleGenAI({ apiKey: key });
       } else {
-         console.warn("API Key might be missing or process.env is undefined.");
-         // Fallback usually not possible without key, but prevents crash
+         console.warn("API Key not found in process.env or import.meta.env");
          return null; 
       }
     } catch (e) {
@@ -817,7 +839,14 @@ const App = () => {
   };
 
   const executeSubmit = (text: string, file: any) => {
-    if ((!text.trim() && !file) || !ai) return;
+    if (!text.trim() && !file) return;
+    
+    if (!ai) {
+      alert(lang === 'ar' 
+        ? "عفواً، مفتاح الربط (API Key) مفقود في إعدادات النشر. يرجى التحقق من متغيرات البيئة في Vercel." 
+        : "System Error: API Key is missing. Please check your Vercel deployment environment variables.");
+      return;
+    }
 
     // 1. Clear Input immediately
     setPrompt('');
@@ -1042,9 +1071,18 @@ const App = () => {
                 <h1 className="font-bold text-lg bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent">{t.appTitle}</h1>
              </div>
            </div>
-           <button onClick={handleNewChat} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700">
-              <Plus className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-           </button>
+           
+           <div className="flex items-center gap-2">
+              {!ai && (
+                 <div className="flex items-center gap-1.5 px-3 py-1 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-full text-red-600 dark:text-red-400 text-xs font-bold animate-pulse">
+                    <WifiOff className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{t.apiKeyMissing}</span>
+                 </div>
+              )}
+              <button onClick={handleNewChat} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700">
+                 <Plus className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+              </button>
+           </div>
         </header>
 
         {/* Sidebar */}
@@ -1135,6 +1173,7 @@ const App = () => {
                  <BrainCircuit className="w-24 h-24 mb-4" />
                  <p className="text-xl font-bold">{t.appTitle}</p>
                  <p className="text-sm">{t.subTitle}</p>
+                 {!ai && <p className="text-xs text-red-400 mt-2 font-bold bg-red-900/20 px-3 py-1 rounded-full">{t.apiKeyMissingDesc}</p>}
               </div>
            ) : (
              messages.map(msg => (
@@ -1156,7 +1195,7 @@ const App = () => {
         </div>
 
         {/* Input Area */}
-        <div className="shrink-0 p-4 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 z-20">
+        <div className="shrink-0 p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 z-20">
            <div className="max-w-4xl mx-auto">
               
               {/* Toolbar */}
@@ -1193,7 +1232,7 @@ const App = () => {
                       value={prompt}
                       onChange={e => setPrompt(e.target.value)}
                       placeholder={isListening ? t.voiceListening : t.inputPlaceholder}
-                      className={`w-full bg-slate-100 dark:bg-slate-900 border text-slate-900 dark:text-slate-100 rounded-2xl pl-12 pr-14 py-3.5 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all ${attachedFile ? 'rounded-tl-none' : ''} ${isListening ? 'border-red-500 animate-pulse' : 'border-slate-200 dark:border-slate-800'}`}
+                      className={`w-full bg-slate-100 dark:bg-slate-900 border text-slate-900 dark:text-slate-100 rounded-2xl pl-12 pr-14 py-4 md:py-3.5 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all ${attachedFile ? 'rounded-tl-none' : ''} ${isListening ? 'border-red-500 animate-pulse' : 'border-slate-200 dark:border-slate-800'}`}
                     />
                     
                     <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center">
@@ -1207,7 +1246,7 @@ const App = () => {
                        <button type="button" onClick={() => setIsListening(!isListening)} className={`p-2 rounded-full transition-colors ${isListening ? 'bg-red-50 text-red-500' : 'text-slate-400 hover:text-slate-600'}`}>
                           <Mic className="w-5 h-5" />
                        </button>
-                       <button disabled={(!prompt.trim() && !attachedFile) || !ai} type="submit" className="p-2 bg-purple-600 text-white rounded-xl hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-600/20 transition-all active:scale-95">
+                       <button disabled={!prompt.trim() && !attachedFile} type="submit" className="p-2 bg-purple-600 text-white rounded-xl hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-600/20 transition-all active:scale-95">
                           <Send className="w-4 h-4" />
                        </button>
                     </div>
