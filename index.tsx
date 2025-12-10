@@ -7,7 +7,7 @@ import {
   Save, FolderPlus, Download, Play, Copy, Folder, Trash2, FileJson, 
   Menu, Bug, FileCode, BookOpen, TestTube, Eraser, Archive, ExternalLink,
   Mic, Paperclip, Plus, History, Settings, Moon, Sun, Monitor, Languages, Eye, AlertTriangle,
-  User, Bot, Clock, ChevronDown, ChevronUp, Share2, Lightbulb, MessageCircle
+  User, Bot, Clock, ChevronDown, ChevronUp, Share2, Lightbulb, MessageCircle, Upload, Users, Star
 } from 'lucide-react';
 
 // --- Types ---
@@ -39,6 +39,11 @@ interface ChatMessage {
   };
   timestamp: number;
   comparison?: any;
+  consensus?: {
+    text: string;
+    loading: boolean;
+    error: string | null;
+  };
 }
 
 interface ChatSession {
@@ -92,8 +97,8 @@ const TRANSLATIONS = {
     folderName: "Folder Name",
     save: "Save",
     saveToFolder: "Save to Folder",
-    exportBackup: "Export Backup",
-    importBackup: "Import Backup",
+    exportBackup: "Export Data (JSON)",
+    importBackup: "Import Data (JSON)",
     downloadZip: "Download Project (ZIP)",
     inputPlaceholder: "Ask a coding question...",
     deepThinking: "Deep Thinking",
@@ -118,6 +123,9 @@ const TRANSLATIONS = {
     download: "Download",
     chatHistory: "Chat History",
     delete: "Delete",
+    consensusBtn: "Unify Solutions (Expert Meeting)",
+    consensusTitle: "The Master Solution",
+    consensusDesc: "Synthesized from all 3 models based on the judge's verdict.",
     tools: {
       debug: "Debug",
       refactor: "Refactor",
@@ -143,8 +151,8 @@ const TRANSLATIONS = {
     folderName: "اسم المجلد",
     save: "حفظ",
     saveToFolder: "حفظ في مجلد",
-    exportBackup: "تصدير نسخة احتياطية",
-    importBackup: "استعادة نسخة احتياطية",
+    exportBackup: "تصدير البيانات (JSON)",
+    importBackup: "استيراد البيانات (JSON)",
     downloadZip: "تنزيل المشروع (ZIP)",
     inputPlaceholder: "اسأل سؤالاً برمجياً...",
     deepThinking: "تفكير عميق",
@@ -169,6 +177,9 @@ const TRANSLATIONS = {
     download: "تنزيل",
     chatHistory: "سجل المحادثات",
     delete: "حذف",
+    consensusBtn: "توحيد الحلول (اجتماع الخبراء)",
+    consensusTitle: "الحل النموذجي الموحد",
+    consensusDesc: "تم استخلاصه من النماذج الثلاثة بناءً على توصية التحكيم.",
     tools: {
       debug: "تصحيح",
       refactor: "تحسين",
@@ -231,6 +242,8 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
     super(props);
     this.state = { hasError: false, error: null };
   }
+
+  public state: ErrorBoundaryState;
 
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
@@ -331,10 +344,11 @@ interface ChatMessageBubbleProps {
   onPreview: (code: string) => void;
   t: any;
   onCompare: (msg: ChatMessage) => void;
+  onConsensus: (msg: ChatMessage) => void;
   onSuggestionClick: (text: string) => void;
 }
 
-const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang, folders, onSaveSnippet, onPreview, t, onCompare, onSuggestionClick }) => {
+const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang, folders, onSaveSnippet, onPreview, t, onCompare, onConsensus, onSuggestionClick }) => {
   const isUser = msg.role === 'user';
   const [activeTab, setActiveTab] = useState(0);
 
@@ -556,7 +570,77 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang, folder
                           </button>
                        ))}
                     </div>
+
+                    {/* Consensus Button */}
+                    {!msg.consensus && (
+                      <div className="mt-4 border-t border-yellow-200 dark:border-yellow-700/30 pt-4 flex justify-center">
+                        <button 
+                          onClick={() => onConsensus(msg)}
+                          className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white rounded-full font-bold shadow-md shadow-amber-500/20 transition-all hover:scale-105 active:scale-95"
+                        >
+                          <Users className="w-4 h-4" />
+                          {t.consensusBtn}
+                        </button>
+                      </div>
+                    )}
                  </div>
+              )}
+
+              {/* Consensus Result (Master Solution) */}
+              {msg.consensus && (
+                <div className="mt-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-slate-900 dark:to-slate-800 border border-indigo-200 dark:border-indigo-800 rounded-xl overflow-hidden shadow-lg animate-in slide-in-from-bottom-2 duration-500">
+                  <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-3 flex items-center gap-2 text-white">
+                    <Star className="w-5 h-5 text-yellow-300 fill-yellow-300" />
+                    <span className="font-bold text-sm">{t.consensusTitle}</span>
+                  </div>
+                  
+                  <div className="p-4 bg-white/50 dark:bg-black/20">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 italic mb-4">{t.consensusDesc}</p>
+                    
+                    {msg.consensus.loading ? (
+                      <div className="flex flex-col items-center justify-center py-8 opacity-60">
+                         <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mb-2" />
+                         <span className="text-xs text-indigo-600 dark:text-indigo-400">{t.thinking}</span>
+                      </div>
+                    ) : msg.consensus.error ? (
+                       <div className="text-red-500 text-sm">{msg.consensus.error}</div>
+                    ) : (
+                       <div className="consensus-content">
+                          <CodeBlock 
+                            content={msg.consensus.text || ''} 
+                            folders={folders} 
+                            onSaveSnippet={onSaveSnippet}
+                            onPreview={onPreview}
+                            t={t}
+                          />
+                          <div className="mt-2 flex justify-end gap-2">
+                             <button 
+                                onClick={() => navigator.clipboard.writeText(msg.consensus?.text || '')}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800"
+                             >
+                                <Copy className="w-3.5 h-3.5" /> {t.copy}
+                             </button>
+                             <div className="relative group/cons-save">
+                                <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800">
+                                   <FolderPlus className="w-3.5 h-3.5" /> {t.save}
+                                </button>
+                                <div className="absolute right-0 bottom-full mb-1 w-40 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded shadow-xl hidden group-hover/cons-save:block z-50">
+                                    {folders.map(f => (
+                                      <button 
+                                          key={f.id} 
+                                          onClick={() => onSaveSnippet(f.id, msg.consensus?.text || '', 'txt')} 
+                                          className="w-full text-left px-3 py-2 text-[10px] hover:bg-slate-100 dark:hover:bg-slate-700 truncate"
+                                      >
+                                          {f.name}
+                                      </button>
+                                    ))}
+                                </div>
+                             </div>
+                          </div>
+                       </div>
+                    )}
+                  </div>
+                </div>
               )}
            </div>
         </div>
@@ -609,6 +693,7 @@ const App = () => {
   
   const scrollEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   // Tools
   const tools: Tool[] = useMemo(() => [
@@ -695,6 +780,40 @@ const App = () => {
         setSessions(prev => prev.filter(s => s.id !== id));
         if (id === sessionId) handleNewChat();
      }
+  };
+
+  const handleExportBackup = () => {
+    const data = {
+      version: 1,
+      timestamp: Date.now(),
+      folders,
+      history: sessions
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tricoder_backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+  };
+
+  const handleImportBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const json = JSON.parse(ev.target?.result as string);
+        if (json.folders) setFolders(json.folders);
+        if (json.history) setSessions(json.history);
+        alert("Backup restored successfully!");
+        window.location.reload(); // To ensure clean state
+      } catch (err) {
+        alert("Invalid backup file.");
+      }
+    };
+    reader.readAsText(file);
   };
 
   const executeSubmit = (text: string, file: any) => {
@@ -835,6 +954,53 @@ const App = () => {
     }
   };
 
+  const handleConsensus = async (msg: ChatMessage) => {
+    if (!ai || !msg.modelsData || !msg.comparison) return;
+    
+    // Set loading state
+    setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, consensus: { text: '', loading: true, error: null } } : m));
+
+    try {
+       const consensusPrompt = `
+         You are the Chief Technology Officer (CTO) leading a meeting with 3 senior engineers.
+         
+         The User Problem: "${msg.content}"
+         
+         Solution 1 (Logic Architect): ${msg.modelsData[0].text}
+         Solution 2 (Backend Engineer): ${msg.modelsData[1].text}
+         Solution 3 (Mentor): ${msg.modelsData[2].text}
+         
+         The Judge's Verdict was: "${msg.comparison.reasoning}" and the winner was "${msg.comparison.winner}".
+         
+         YOUR TASK:
+         Synthesize the "Perfect Solution". Do not just copy the winner. 
+         Take the algorithmic strength of the Architect, the performance optimizations of the Engineer, and the clarity of the Mentor.
+         Combine them into ONE final, master-piece code block with an explanation.
+         
+         ${lang === 'ar' ? 'OUTPUT MUST BE IN ARABIC (Explanation) and Code.' : 'Output in English.'}
+         Structure:
+         1. Brief decision logic (Why you chose what).
+         2. The Master Code Block.
+       `;
+
+       const result = await ai.models.generateContent({
+         model: 'gemini-2.5-flash',
+         contents: consensusPrompt
+       });
+
+       setMessages(prev => prev.map(m => m.id === msg.id ? { 
+         ...m, 
+         consensus: { text: result.text || '', loading: false, error: null } 
+       } : m));
+
+    } catch (e) {
+      setMessages(prev => prev.map(m => m.id === msg.id ? { 
+        ...m, 
+        consensus: { text: '', loading: false, error: 'Meeting failed to reach consensus.' } 
+      } : m));
+    }
+  };
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -940,9 +1106,22 @@ const App = () => {
                       </div>
                    </div>
                    
-                   <button onClick={handleBackupZip} className="w-full py-2 bg-slate-100 dark:bg-slate-800 rounded text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-200">
-                      <Archive className="w-4 h-4" /> {t.downloadZip}
-                   </button>
+                   <div className="space-y-2 pt-4 border-t border-slate-200 dark:border-slate-800">
+                      <button onClick={handleExportBackup} className="w-full py-2 bg-slate-100 dark:bg-slate-800 rounded text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-200">
+                          <FileJson className="w-4 h-4" /> {t.exportBackup}
+                      </button>
+                      
+                      <div className="relative">
+                          <input type="file" ref={importInputRef} onChange={handleImportBackup} className="hidden" accept=".json" />
+                          <button onClick={() => importInputRef.current?.click()} className="w-full py-2 bg-slate-100 dark:bg-slate-800 rounded text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-200">
+                              <Upload className="w-4 h-4" /> {t.importBackup}
+                          </button>
+                      </div>
+                      
+                      <button onClick={handleBackupZip} className="w-full py-2 bg-slate-100 dark:bg-slate-800 rounded text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-200">
+                          <Archive className="w-4 h-4" /> {t.downloadZip}
+                      </button>
+                   </div>
                 </div>
              </div>
              <div className="flex-1 bg-black/20 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)}></div>
@@ -967,6 +1146,7 @@ const App = () => {
                   onSaveSnippet={handleSaveSnippet} 
                   onPreview={setPreviewContent}
                   onCompare={handleCompare}
+                  onConsensus={handleConsensus}
                   onSuggestionClick={(txt) => executeSubmit(txt, null)}
                   t={t} 
                />
