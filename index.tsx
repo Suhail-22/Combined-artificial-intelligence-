@@ -145,6 +145,13 @@ interface HistoryItem {
   responses: { 0: string; 1: string; 2: string };
 }
 
+interface Tool {
+    id: string;
+    icon: React.ReactNode;
+    label: string;
+    prompt: string;
+}
+
 // --- Helper Functions ---
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -359,27 +366,26 @@ const Sidebar = ({ isOpen, onClose, folders, setFolders, history, setHistory, on
   );
 };
 
-const SmartToolbar = ({ onAction, t }) => {
-  const tools = [
-    { icon: <Bug className="w-4 h-4" />, label: t.tools.debug, prompt: "Find and fix bugs in the code. Think deeply about edge cases: " },
-    { icon: <FileCode className="w-4 h-4" />, label: t.tools.refactor, prompt: "Refactor this code for better performance and readability: " },
-    { icon: <BookOpen className="w-4 h-4" />, label: t.tools.explain, prompt: "Explain this code step-by-step in simple terms: " },
-    { icon: <TestTube className="w-4 h-4" />, label: t.tools.test, prompt: "Write comprehensive unit tests for this code: " },
-    { icon: <ExternalLink className="w-4 h-4" />, label: t.tools.convert, prompt: "Convert this code to [LANGUAGE]: " },
-  ];
-
+const SmartToolbar = ({ tools, activeToolId, onToggle }) => {
   return (
     <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-      {tools.map((tool, idx) => (
-        <button
-          key={idx}
-          onClick={() => onAction(tool.prompt)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-full text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap transition-all active:scale-95 shadow-sm"
-        >
-          {tool.icon}
-          <span>{tool.label}</span>
-        </button>
-      ))}
+      {tools.map((tool) => {
+        const isActive = activeToolId === tool.id;
+        return (
+          <button
+            key={tool.id}
+            onClick={() => onToggle(isActive ? null : tool.id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all active:scale-95 shadow-sm border ${
+              isActive 
+                ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-600 font-medium' 
+                : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+            }`}
+          >
+            {tool.icon}
+            <span>{tool.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 };
@@ -615,7 +621,17 @@ const App = () => {
   const [deepThinking, setDeepThinking] = useState(false);
   const [attachedFile, setAttachedFile] = useState<{name: string, data: string, mime: string} | null>(null);
   const [isListening, setIsListening] = useState(false);
+  const [activeToolId, setActiveToolId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Define Tools
+  const tools: Tool[] = useMemo(() => [
+    { id: 'debug', icon: <Bug className="w-4 h-4" />, label: t.tools.debug, prompt: "Find and fix bugs in the code. Think deeply about edge cases for the following request:" },
+    { id: 'refactor', icon: <FileCode className="w-4 h-4" />, label: t.tools.refactor, prompt: "Refactor this code for better performance and readability:" },
+    { id: 'explain', icon: <BookOpen className="w-4 h-4" />, label: t.tools.explain, prompt: "Explain this code or concept step-by-step in simple terms:" },
+    { id: 'test', icon: <TestTube className="w-4 h-4" />, label: t.tools.test, prompt: "Write comprehensive unit tests for this code:" },
+    { id: 'convert', icon: <ExternalLink className="w-4 h-4" />, label: t.tools.convert, prompt: "Convert this code to a different language/framework (infer target from context or provide best alternative):" },
+  ], [t]);
 
   // Theme Effect
   useEffect(() => {
@@ -658,6 +674,7 @@ const App = () => {
     setResponses({ 0: '', 1: '', 2: '' });
     setAttachedFile(null);
     setDeepThinking(false);
+    setActiveToolId(null);
   };
 
   const handleHistoryLoad = (item: HistoryItem) => {
@@ -724,11 +741,15 @@ const App = () => {
         finalSystemInstruction += "\n\nCRITICAL RULE: The user has selected ARABIC language. You MUST provide all explanations, analysis, and non-code text in ARABIC. Do NOT use English for explanations. Only use English for code blocks and specific technical terms.";
       }
 
+      // Check active tool and prepend its prompt
+      const activeTool = tools.find(t => t.id === activeToolId);
+      const effectivePrompt = (activeTool ? `[TASK: ${activeTool.label.toUpperCase()} - ${activeTool.prompt}]\n\n` : "") + prompt;
+
       const parts: any[] = [];
       if (attachedFile) {
         parts.push({ inlineData: { mimeType: attachedFile.mime, data: attachedFile.data } });
       }
-      parts.push({ text: prompt });
+      parts.push({ text: effectivePrompt });
 
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
@@ -944,7 +965,7 @@ const App = () => {
         <div className="max-w-5xl mx-auto space-y-3">
           
           <div className="flex justify-between items-end">
-             <SmartToolbar onAction={(txt) => setPrompt(prev => txt + prev)} t={t} />
+             <SmartToolbar tools={tools} activeToolId={activeToolId} onToggle={setActiveToolId} />
              <button 
                onClick={() => setDeepThinking(!deepThinking)} 
                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors mb-2 ${deepThinking ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 border-purple-200 dark:border-purple-700' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800'}`}
