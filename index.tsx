@@ -7,7 +7,7 @@ import {
   Save, FolderPlus, Download, Play, Copy, Folder, Trash2, FileJson, 
   Menu, Bug, FileCode, BookOpen, TestTube, Eraser, Archive, ExternalLink,
   Mic, Paperclip, Plus, History, Settings, Moon, Sun, Monitor, Languages, Eye, AlertTriangle,
-  User, Bot, Clock, ChevronDown, ChevronUp, Share2, Lightbulb
+  User, Bot, Clock, ChevronDown, ChevronUp, Share2, Lightbulb, MessageCircle
 } from 'lucide-react';
 
 // --- Types ---
@@ -39,6 +39,13 @@ interface ChatMessage {
   };
   timestamp: number;
   comparison?: any;
+}
+
+interface ChatSession {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  timestamp: number;
 }
 
 interface Tool {
@@ -109,6 +116,8 @@ const TRANSLATIONS = {
     suggestions: "Suggestions",
     copy: "Copy",
     download: "Download",
+    chatHistory: "Chat History",
+    delete: "Delete",
     tools: {
       debug: "Debug",
       refactor: "Refactor",
@@ -158,6 +167,8 @@ const TRANSLATIONS = {
     suggestions: "اقتراحات",
     copy: "نسخ",
     download: "تنزيل",
+    chatHistory: "سجل المحادثات",
+    delete: "حذف",
     tools: {
       debug: "تصحيح",
       refactor: "تحسين",
@@ -216,7 +227,10 @@ interface ErrorBoundaryState {
 }
 
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { hasError: false, error: null };
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
 
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
@@ -489,20 +503,57 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang, folder
 
               {/* Comparison Result if exists */}
               {msg.comparison && (
-                 <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-700/30 rounded-xl p-4 animate-in slide-in-from-top-2">
+                 <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-700/30 rounded-xl p-4 animate-in slide-in-from-top-2 relative group">
                     <div className="flex items-center gap-2 mb-2 text-yellow-700 dark:text-yellow-400 font-bold text-sm">
                        <Trophy className="w-4 h-4" /> {t.judgeVerdict}
                     </div>
+                    
+                    {/* Comparison Toolbar */}
+                    <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <button 
+                            onClick={() => navigator.clipboard.writeText(`${msg.comparison.winner}\n\n${msg.comparison.reasoning}`)}
+                            className="p-1.5 bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-200 rounded hover:bg-yellow-200 dark:hover:bg-yellow-800"
+                            title={t.copy}
+                        >
+                            <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        <div className="relative group/save">
+                            <button className="p-1.5 bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-200 rounded hover:bg-yellow-200 dark:hover:bg-yellow-800" title={t.save}>
+                                <FolderPlus className="w-3.5 h-3.5" />
+                            </button>
+                            <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded shadow-xl hidden group-hover/save:block z-50">
+                                {folders.length === 0 ? (
+                                    <div className="p-2 text-[10px] text-slate-500">No folders</div>
+                                ) : (
+                                    folders.map(f => (
+                                    <button 
+                                        key={f.id} 
+                                        onClick={() => onSaveSnippet(f.id, msg.comparison.reasoning, 'txt')} 
+                                        className="w-full text-left px-3 py-2 text-[10px] hover:bg-slate-100 dark:hover:bg-slate-700 truncate"
+                                    >
+                                        {f.name}
+                                    </button>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="text-sm text-slate-700 dark:text-slate-300 mb-3">
                        <span className="font-bold">{t.winner}:</span> {msg.comparison.winner}
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">{msg.comparison.reasoning}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4 whitespace-pre-wrap">{msg.comparison.reasoning}</p>
                     <div className="grid grid-cols-3 gap-2">
                        {msg.comparison.scores.map((s: any, i: number) => (
-                          <div key={i} className="bg-white dark:bg-slate-800 p-2 rounded border border-yellow-100 dark:border-yellow-900/20 text-center">
-                             <div className="text-[10px] text-slate-500 truncate">{s.model}</div>
-                             <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{s.performance}/10</div>
-                          </div>
+                          <button 
+                            key={i} 
+                            onClick={() => setActiveTab(i)}
+                            className={`bg-white dark:bg-slate-800 p-2 rounded border border-yellow-100 dark:border-yellow-900/20 text-center transition-all hover:scale-105 active:scale-95 hover:border-yellow-300 dark:hover:border-yellow-600 ${activeTab === i ? 'ring-2 ring-yellow-400 dark:ring-yellow-600' : ''}`}
+                            title="Click to view this model's answer"
+                          >
+                             <div className="text-[10px] text-slate-500 truncate pointer-events-none">{s.model}</div>
+                             <div className="text-xs font-bold text-slate-800 dark:text-slate-200 pointer-events-none">{s.performance}/10</div>
+                          </button>
                        ))}
                     </div>
                  </div>
@@ -542,7 +593,11 @@ const App = () => {
   const [folders, setFolders] = useState<Folder[]>(() => {
     try { return JSON.parse(localStorage.getItem('tricoder_folders') || '[]'); } catch { return []; }
   });
-  
+  const [sessions, setSessions] = useState<ChatSession[]>(() => {
+    try { return JSON.parse(localStorage.getItem('tricoder_history') || '[]'); } catch { return []; }
+  });
+  const [sessionId, setSessionId] = useState<string>(generateId());
+
   // UI State
   const [prompt, setPrompt] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -578,6 +633,34 @@ const App = () => {
   useEffect(() => { document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'; }, [lang]);
   
   useEffect(() => { localStorage.setItem('tricoder_folders', JSON.stringify(folders)); }, [folders]);
+  
+  useEffect(() => { localStorage.setItem('tricoder_history', JSON.stringify(sessions)); }, [sessions]);
+
+  // Save Session Logic
+  useEffect(() => {
+    if (messages.length > 0) {
+       setSessions(prev => {
+          const existing = prev.findIndex(s => s.id === sessionId);
+          const firstUserMsg = messages.find(m => m.role === 'user');
+          const title = firstUserMsg ? firstUserMsg.content?.substring(0, 40) + (firstUserMsg.content?.length! > 40 ? '...' : '') : 'New Chat';
+          
+          const newSession: ChatSession = {
+             id: sessionId,
+             title: title || 'New Chat',
+             messages,
+             timestamp: Date.now()
+          };
+
+          if (existing >= 0) {
+             const updated = [...prev];
+             updated[existing] = newSession;
+             return updated;
+          } else {
+             return [newSession, ...prev];
+          }
+       });
+    }
+  }, [messages, sessionId]);
 
   useEffect(() => {
     scrollEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -596,6 +679,22 @@ const App = () => {
     setMessages([]);
     setPrompt('');
     setAttachedFile(null);
+    setSessionId(generateId());
+    setIsSidebarOpen(false);
+  };
+
+  const loadSession = (session: ChatSession) => {
+     setMessages(session.messages);
+     setSessionId(session.id);
+     setIsSidebarOpen(false);
+  };
+
+  const deleteSession = (e: React.MouseEvent, id: string) => {
+     e.stopPropagation();
+     if (confirm('Delete this chat?')) {
+        setSessions(prev => prev.filter(s => s.id !== id));
+        if (id === sessionId) handleNewChat();
+     }
   };
 
   const executeSubmit = (text: string, file: any) => {
@@ -792,7 +891,27 @@ const App = () => {
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                   {/* History Section */}
                    <div>
+                      <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">{t.chatHistory}</h3>
+                      <div className="space-y-2">
+                        {sessions.length === 0 ? (
+                           <p className="text-xs text-slate-500 italic p-2">{t.noHistory}</p>
+                        ) : (
+                           sessions.map(s => (
+                              <div key={s.id} className={`group flex items-center gap-2 p-2 rounded cursor-pointer ${s.id === sessionId ? 'bg-purple-100 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={() => loadSession(s)}>
+                                 <MessageCircle className={`w-4 h-4 ${s.id === sessionId ? 'text-purple-600' : 'text-slate-400'}`} />
+                                 <span className="flex-1 truncate text-xs text-slate-700 dark:text-slate-300">{s.title}</span>
+                                 <button onClick={(e) => deleteSession(e, s.id)} className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-500">
+                                    <Trash2 className="w-3 h-3" />
+                                 </button>
+                              </div>
+                           ))
+                        )}
+                      </div>
+                   </div>
+                   
+                   <div className="border-t border-slate-200 dark:border-slate-800 pt-4">
                       <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">{t.language}</h3>
                       <div className="flex gap-2">
                          <button onClick={() => setLang('en')} className={`flex-1 py-2 text-xs rounded border ${lang === 'en' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-600' : 'border-slate-200 dark:border-slate-700'}`}>English</button>
