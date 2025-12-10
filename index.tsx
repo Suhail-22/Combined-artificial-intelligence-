@@ -6,164 +6,9 @@ import {
   Send, Scale, Code2, BrainCircuit, MessageSquare, Trophy, X, Loader2, Sparkles,
   Save, FolderPlus, Download, Play, Copy, Folder, Trash2, FileJson, 
   Menu, Bug, FileCode, BookOpen, TestTube, Eraser, Archive, ExternalLink,
-  Mic, Paperclip, Plus, History, Settings, Moon, Sun, Monitor, Languages, Eye, AlertTriangle
+  Mic, Paperclip, Plus, History, Settings, Moon, Sun, Monitor, Languages, Eye, AlertTriangle,
+  User, Bot, Clock, ChevronDown, ChevronUp, Share2
 } from 'lucide-react';
-
-// --- Error Boundary ---
-interface ErrorBoundaryProps {
-  children: React.ReactNode;
-}
-
-interface ErrorBoundaryState {
-  hasError: boolean;
-  error: Error | null;
-}
-
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error };
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="flex flex-col items-center justify-center h-screen bg-slate-900 text-white p-6 text-center">
-          <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Something went wrong</h1>
-          <p className="text-slate-400 mb-4 max-w-md">The application encountered an error. Please try refreshing the page.</p>
-          <pre className="bg-slate-800 p-4 rounded text-left text-xs text-red-300 overflow-auto w-full max-w-lg">
-            {this.state.error?.toString()}
-          </pre>
-          <button 
-            onClick={() => window.location.reload()}
-            className="mt-6 px-6 py-2 bg-purple-600 rounded-full font-bold hover:bg-purple-500 transition-colors"
-          >
-            Reload App
-          </button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-// --- Constants & Translations ---
-
-const TRANSLATIONS = {
-  en: {
-    appTitle: "Tri-Coder AI",
-    subTitle: "Powered by Gemini • Multi-Persona Simulation",
-    library: "Library",
-    history: "History",
-    settings: "Settings",
-    newChat: "New Chat",
-    newFolder: "New Folder",
-    folderName: "Folder Name",
-    save: "Save",
-    exportBackup: "Export Backup",
-    importBackup: "Import Backup",
-    downloadZip: "Download Project (ZIP)",
-    inputPlaceholder: "Ask a coding question or upload a file...",
-    deepThinking: "Deep Thinking",
-    deepThinkingOn: "Deep Thinking ON",
-    judge: "Smart Judge",
-    judgeVerdict: "AI Judge Verdict",
-    winner: "Winner",
-    performance: "Performance",
-    cleanliness: "Code Cleanliness",
-    waiting: "Waiting for prompt...",
-    thinking: "Thinking...",
-    error: "Error generating response",
-    theme: "Theme",
-    language: "Language",
-    voiceListening: "Listening...",
-    fileAttached: "File attached",
-    folders: "Folders",
-    noHistory: "No history yet",
-    preview: "Preview",
-    tools: {
-      debug: "Debug",
-      refactor: "Refactor",
-      explain: "Explain",
-      test: "Unit Test",
-      convert: "Convert"
-    }
-  },
-  ar: {
-    appTitle: "المبرمج الثلاثي",
-    subTitle: "مدعوم بواسطة Gemini • محاكاة شخصيات متعددة",
-    library: "المكتبة",
-    history: "السجل",
-    settings: "الإعدادات",
-    newChat: "محادثة جديدة",
-    newFolder: "مجلد جديد",
-    folderName: "اسم المجلد",
-    save: "حفظ",
-    exportBackup: "تصدير نسخة احتياطية",
-    importBackup: "استعادة نسخة احتياطية",
-    downloadZip: "تنزيل المشروع (ZIP)",
-    inputPlaceholder: "اسأل سؤالاً برمجياً أو ارفع ملفاً...",
-    deepThinking: "تفكير عميق",
-    deepThinkingOn: "التفكير العميق مفعل",
-    judge: "الحاكم الذكي",
-    judgeVerdict: "حكم الذكاء الاصطناعي",
-    winner: "الفائز",
-    performance: "الأداء",
-    cleanliness: "نظافة الكود",
-    waiting: "بانتظار السؤال...",
-    thinking: "جاري التفكير...",
-    error: "حدث خطأ أثناء التوليد",
-    theme: "المظهر",
-    language: "اللغة",
-    voiceListening: "جاري الاستماع...",
-    fileAttached: "تم إرفاق ملف",
-    folders: "المجلدات",
-    noHistory: "لا يوجد سجل سابق",
-    preview: "معاينة",
-    tools: {
-      debug: "تصحيح",
-      refactor: "تحسين",
-      explain: "شرح",
-      test: "اختبار",
-      convert: "تحويل"
-    }
-  }
-};
-
-const AI_MODELS_CONFIG = [
-  {
-    id: 'deepseek_style',
-    name: 'Logic Master',
-    sub: '(DeepSeek Style)',
-    icon: <BrainCircuit className="w-5 h-5 text-purple-600 dark:text-purple-400" />,
-    baseSystemInstruction: "You are an expert software architect acting as a 'Logic Analyst'. When asked a coding question, DO NOT just write code. First, analyze the problem, explain the algorithm step-by-step, discuss time/space complexity, and then provide the solution.",
-    color: 'border-purple-500/30 bg-purple-50 dark:bg-purple-900/10'
-  },
-  {
-    id: 'qwen_style',
-    name: 'Code Ninja',
-    sub: '(Qwen Coder Style)',
-    icon: <Code2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />,
-    baseSystemInstruction: "You are a senior backend engineer acting as a 'Code Generator'. Provide highly optimized, production-ready, clean code. Do not provide lengthy explanations. Focus purely on syntax, performance, and best practices.",
-    color: 'border-blue-500/30 bg-blue-50 dark:bg-blue-900/10'
-  },
-  {
-    id: 'gemma_style',
-    name: 'Helpful Mentor',
-    sub: '(Phi/Gemma Style)',
-    icon: <MessageSquare className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />,
-    baseSystemInstruction: "You are a friendly coding mentor. Explain concepts simply and clearly. Provide code that is easy to read and well-commented. Balance between explanation and implementation.",
-    color: 'border-emerald-500/30 bg-emerald-50 dark:bg-emerald-900/10'
-  }
-];
-
-// Initialize GenAI
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // --- Types ---
 
@@ -181,11 +26,19 @@ interface Folder {
   snippets: Snippet[];
 }
 
-interface HistoryItem {
+interface ChatMessage {
   id: string;
+  role: 'user' | 'model';
+  content?: string; // For user
+  modelsData?: { // For model
+    [key: number]: {
+      text: string;
+      loading: boolean;
+      error: string | null;
+    }
+  };
   timestamp: number;
-  prompt: string;
-  responses: { 0: string; 1: string; 2: string };
+  comparison?: any;
 }
 
 interface Tool {
@@ -199,7 +52,7 @@ interface Tool {
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
-const downloadFile = (filename, content) => {
+const downloadFile = (filename: string, content: string) => {
   const element = document.createElement('a');
   const file = new Blob([content], {type: 'text/plain'});
   element.href = URL.createObjectURL(file);
@@ -218,226 +71,193 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
   });
 };
 
-// --- Components ---
+// --- Constants & Translations ---
 
-const PreviewModal = ({ isOpen, onClose, code }) => {
-  if (!isOpen) return null;
+const TRANSLATIONS = {
+  en: {
+    appTitle: "Tri-Coder AI",
+    subTitle: "Multi-Persona Coding Assistant",
+    library: "Library",
+    history: "History",
+    settings: "Settings",
+    newChat: "New Chat",
+    newFolder: "New Folder",
+    folderName: "Folder Name",
+    save: "Save",
+    exportBackup: "Export Backup",
+    importBackup: "Import Backup",
+    downloadZip: "Download Project (ZIP)",
+    inputPlaceholder: "Ask a coding question...",
+    deepThinking: "Deep Thinking",
+    deepThinkingOn: "Deep Thinking ON",
+    judge: "Judge",
+    judgeVerdict: "AI Verdict",
+    winner: "Winner",
+    waiting: "Waiting...",
+    thinking: "Thinking...",
+    error: "Error",
+    theme: "Theme",
+    language: "Language",
+    voiceListening: "Listening...",
+    fileAttached: "File attached",
+    folders: "Folders",
+    noHistory: "No history yet",
+    preview: "Preview",
+    you: "You",
+    ai: "Tri-Coder",
+    tools: {
+      debug: "Debug",
+      refactor: "Refactor",
+      explain: "Explain",
+      test: "Unit Test",
+      convert: "Convert"
+    }
+  },
+  ar: {
+    appTitle: "المبرمج الثلاثي",
+    subTitle: "مساعد برمجي متعدد الشخصيات",
+    library: "المكتبة",
+    history: "السجل",
+    settings: "الإعدادات",
+    newChat: "محادثة جديدة",
+    newFolder: "مجلد جديد",
+    folderName: "اسم المجلد",
+    save: "حفظ",
+    exportBackup: "تصدير نسخة احتياطية",
+    importBackup: "استعادة نسخة احتياطية",
+    downloadZip: "تنزيل المشروع (ZIP)",
+    inputPlaceholder: "اسأل سؤالاً برمجياً...",
+    deepThinking: "تفكير عميق",
+    deepThinkingOn: "التفكير العميق مفعل",
+    judge: "تحكيم",
+    judgeVerdict: "حكم الذكاء الاصطناعي",
+    winner: "الفائز",
+    waiting: "جاري الانتظار...",
+    thinking: "جاري التفكير...",
+    error: "خطأ",
+    theme: "المظهر",
+    language: "اللغة",
+    voiceListening: "جاري الاستماع...",
+    fileAttached: "تم إرفاق ملف",
+    folders: "المجلدات",
+    noHistory: "لا يوجد سجل سابق",
+    preview: "معاينة",
+    you: "أنت",
+    ai: "المبرمج الثلاثي",
+    tools: {
+      debug: "تصحيح",
+      refactor: "تحسين",
+      explain: "شرح",
+      test: "اختبار",
+      convert: "تحويل"
+    }
+  }
+};
 
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl w-full max-w-4xl h-[80vh] flex flex-col shadow-2xl transition-colors">
-        <div className="p-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
-          <h3 className="text-slate-900 dark:text-white font-bold flex items-center gap-2">
-            <Play className="w-4 h-4 text-emerald-500" /> Live Preview
-          </h3>
-          <button onClick={onClose}><X className="w-5 h-5 text-slate-500 dark:text-slate-400 hover:text-red-500" /></button>
+const AI_MODELS_CONFIG = [
+  {
+    id: 'deepseek_style',
+    name: 'Logic Master',
+    shortName: 'Logic',
+    sub: 'Architect',
+    icon: <BrainCircuit className="w-4 h-4" />,
+    baseSystemInstruction: "You are an expert software architect acting as a 'Logic Analyst'. When asked a coding question, DO NOT just write code. First, analyze the problem, explain the algorithm step-by-step, discuss time/space complexity, and then provide the solution.",
+    colorClass: 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
+  },
+  {
+    id: 'qwen_style',
+    name: 'Code Ninja',
+    shortName: 'Code',
+    sub: 'Engineer',
+    icon: <Code2 className="w-4 h-4" />,
+    baseSystemInstruction: "You are a senior backend engineer acting as a 'Code Generator'. Provide highly optimized, production-ready, clean code. Do not provide lengthy explanations. Focus purely on syntax, performance, and best practices.",
+    colorClass: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+  },
+  {
+    id: 'gemma_style',
+    name: 'Mentor',
+    shortName: 'Mentor',
+    sub: 'Teacher',
+    icon: <MessageSquare className="w-4 h-4" />,
+    baseSystemInstruction: "You are a friendly coding mentor. Explain concepts simply and clearly. Provide code that is easy to read and well-commented. Balance between explanation and implementation.",
+    colorClass: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
+  }
+];
+
+// --- Error Boundary ---
+
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-screen bg-slate-900 text-white p-6 text-center">
+          <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />
+          <h1 className="text-2xl font-bold mb-2">Something went wrong</h1>
+          <p className="text-slate-400 mb-4 max-w-md">Please restart the application.</p>
+          <button onClick={() => window.location.reload()} className="mt-4 px-6 py-2 bg-purple-600 rounded-full font-bold">Reload</button>
         </div>
-        <div className="flex-1 bg-white relative">
-          <iframe 
-            srcDoc={code}
-            className="w-full h-full border-none"
-            title="Preview"
-            sandbox="allow-scripts"
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
+      );
+    }
+    return this.props.children;
+  }
+}
 
-const Sidebar = ({ isOpen, onClose, folders, setFolders, history, setHistory, onLoadHistory, onRestore, onBackupZip, lang, setLang, theme, setTheme, t }) => {
-  const [activeTab, setActiveTab] = useState<'library' | 'history'>('library');
-  const [newFolderName, setNewFolderName] = useState('');
+// --- Sub-Components ---
 
-  const createFolder = () => {
-    if (!newFolderName.trim()) return;
-    setFolders([...folders, { id: generateId(), name: newFolderName, snippets: [] }]);
-    setNewFolderName('');
-  };
-
-  const deleteFolder = (id) => {
-    if (confirm('Delete this folder?')) setFolders(folders.filter(f => f.id !== id));
-  };
-
-  const deleteSnippet = (folderId, snippetId) => {
-    setFolders(folders.map(f => {
-      if (f.id !== folderId) return f;
-      return { ...f, snippets: f.snippets.filter(s => s.id !== snippetId) };
-    }));
-  };
-
-  const handleExportBackup = () => {
-    const data = JSON.stringify({ folders, history });
-    downloadFile(`tricoder_backup_${new Date().toISOString().slice(0,10)}.json`, data);
-  };
-
-  const handleImportBackup = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = JSON.parse(event.target.result as string);
-        if (data.folders) onRestore(data.folders);
-        if (data.history) setHistory(data.history);
-        alert('Restored successfully!');
-      } catch (err) { alert('Error parsing backup.'); }
-    };
-    reader.readAsText(file);
-  };
-
+const PreviewModal = ({ isOpen, onClose, code }: { isOpen: boolean, onClose: () => void, code: string | null }) => {
+  if (!isOpen || !code) return null;
   return (
-    <div className={`fixed inset-y-0 ${lang === 'ar' ? 'right-0 border-l' : 'left-0 border-r'} w-80 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 transform transition-transform duration-300 z-50 flex flex-col ${isOpen ? 'translate-x-0' : (lang === 'ar' ? 'translate-x-full' : '-translate-x-full')}`}>
-      
-      {/* Sidebar Header */}
-      <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900">
-        <h2 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <Menu className="w-5 h-5" /> Menu
-        </h2>
-        <button onClick={onClose}><X className="w-5 h-5 text-slate-500" /></button>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-slate-200 dark:border-slate-800">
-        <button 
-          onClick={() => setActiveTab('library')}
-          className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${activeTab === 'library' ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50 dark:bg-purple-900/20' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900'}`}
-        >
-          <Folder className="w-4 h-4" /> {t.library}
-        </button>
-        <button 
-          onClick={() => setActiveTab('history')}
-          className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${activeTab === 'history' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900'}`}
-        >
-          <History className="w-4 h-4" /> {t.history}
-        </button>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-200">
-        
-        {activeTab === 'library' ? (
-          <>
-            <div className="flex gap-2">
-              <input 
-                type="text" 
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder={t.folderName}
-                className="flex-1 bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-sm focus:outline-none focus:border-purple-500"
-              />
-              <button onClick={createFolder} className="bg-purple-600 text-white p-1 rounded hover:bg-purple-500">
-                <FolderPlus className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="space-y-3">
-               {folders.map(folder => (
-                <div key={folder.id} className="space-y-1">
-                   <div className="flex items-center justify-between font-medium text-sm group">
-                     <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                       <Folder className="w-4 h-4 text-yellow-500" /> {folder.name}
-                     </div>
-                     <button onClick={() => deleteFolder(folder.id)} className="text-red-400 opacity-0 group-hover:opacity-100"><Trash2 className="w-3 h-3" /></button>
-                   </div>
-                   <div className="pl-4 space-y-1">
-                     {folder.snippets.map(s => (
-                       <div key={s.id} className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded p-2 text-xs flex justify-between items-center group">
-                         <span className="truncate w-24">{s.title}</span>
-                         <div className="flex gap-2 opacity-50 group-hover:opacity-100">
-                           <button onClick={() => downloadFile(`${s.title}.${s.language}`, s.code)}><Download className="w-3 h-3 text-blue-500" /></button>
-                           <button onClick={() => deleteSnippet(folder.id, s.id)}><X className="w-3 h-3 text-red-500" /></button>
-                         </div>
-                       </div>
-                     ))}
-                   </div>
-                </div>
-               ))}
-            </div>
-          </>
-        ) : (
-          <div className="space-y-3">
-            {history.length === 0 && <p className="text-center text-slate-500 text-xs">{t.noHistory}</p>}
-            {history.slice().reverse().map(item => (
-              <button 
-                key={item.id} 
-                onClick={() => onLoadHistory(item)}
-                className="w-full text-left bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-lg hover:border-blue-500 transition-colors"
-              >
-                <div className="font-medium text-xs text-slate-700 dark:text-slate-300 mb-1 line-clamp-2">{item.prompt}</div>
-                <div className="text-[10px] text-slate-500">{new Date(item.timestamp).toLocaleString()}</div>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Settings Footer */}
-      <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 space-y-3">
-         
-         <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-400">
-            <span className="flex items-center gap-2"><Languages className="w-4 h-4" /> {t.language}</span>
-            <div className="flex bg-slate-200 dark:bg-slate-800 rounded p-1">
-              <button onClick={() => setLang('en')} className={`px-2 rounded ${lang === 'en' ? 'bg-white dark:bg-slate-700 shadow text-black dark:text-white' : ''}`}>EN</button>
-              <button onClick={() => setLang('ar')} className={`px-2 rounded ${lang === 'ar' ? 'bg-white dark:bg-slate-700 shadow text-black dark:text-white' : ''}`}>عربي</button>
-            </div>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white dark:bg-slate-900 w-full max-w-4xl h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200">
+         <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
+            <h3 className="font-bold text-slate-700 dark:text-slate-200">Preview</h3>
+            <button onClick={onClose} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full"><X className="w-5 h-5" /></button>
          </div>
-
-         <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-400">
-            <span className="flex items-center gap-2"><Settings className="w-4 h-4" /> {t.theme}</span>
-            <div className="flex bg-slate-200 dark:bg-slate-800 rounded p-1">
-               <button onClick={() => setTheme('light')} className={`p-1 rounded ${theme === 'light' ? 'bg-white shadow text-yellow-500' : ''}`}><Sun className="w-3 h-3" /></button>
-               <button onClick={() => setTheme('dark')} className={`p-1 rounded ${theme === 'dark' ? 'bg-slate-700 shadow text-blue-300' : ''}`}><Moon className="w-3 h-3" /></button>
-               <button onClick={() => setTheme('system')} className={`p-1 rounded ${theme === 'system' ? 'bg-slate-600 shadow text-white' : ''}`}><Monitor className="w-3 h-3" /></button>
-            </div>
+         <div className="flex-1 bg-white relative">
+            <iframe 
+              srcDoc={code} 
+              title="Preview" 
+              className="w-full h-full border-0" 
+              sandbox="allow-scripts"
+            />
          </div>
-
-         <div className="grid grid-cols-2 gap-2 mt-2">
-            <button onClick={handleExportBackup} className="bg-slate-200 dark:bg-slate-800 text-xs py-2 rounded flex items-center justify-center gap-1 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700">
-              <Save className="w-3 h-3" /> {t.exportBackup}
-            </button>
-            <label className="bg-slate-200 dark:bg-slate-800 text-xs py-2 rounded flex items-center justify-center gap-1 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 cursor-pointer">
-              <FileJson className="w-3 h-3" /> {t.importBackup}
-              <input type="file" onChange={handleImportBackup} accept=".json" className="hidden" />
-            </label>
-         </div>
-         <button onClick={onBackupZip} className="w-full bg-purple-600 hover:bg-purple-500 text-white py-2 rounded text-xs flex items-center justify-center gap-2 font-semibold">
-           <Archive className="w-3 h-3" /> {t.downloadZip}
-         </button>
       </div>
     </div>
   );
 };
 
-const SmartToolbar = ({ tools, activeToolId, onToggle }) => {
-  return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-      {tools.map((tool) => {
-        const isActive = activeToolId === tool.id;
-        return (
-          <button
-            key={tool.id}
-            onClick={() => onToggle(isActive ? null : tool.id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all active:scale-95 shadow-sm border ${
-              isActive 
-                ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-600 font-medium' 
-                : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-            }`}
-          >
-            {tool.icon}
-            <span>{tool.label}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-};
+interface CodeBlockProps {
+  content: string;
+  folders: Folder[];
+  onSaveSnippet: (folderId: string, code: string, lang: string) => void;
+  onPreview: (code: string) => void;
+  t: any;
+}
 
-const CodeBlockRenderer = ({ content, folders, onSaveSnippet, onPreview, t }) => {
+const CodeBlock: React.FC<CodeBlockProps> = ({ content, folders, onSaveSnippet, onPreview, t }) => {
+  if (!content) return null;
   const parts = content.split(/(```[\w-]*\n[\s\S]*?```)/g);
 
   return (
-    <div className="prose prose-sm max-w-none font-sans text-slate-800 dark:text-slate-200">
+    <div className="prose prose-sm max-w-none text-slate-800 dark:text-slate-200 leading-relaxed">
       {parts.map((part, index) => {
         if (part.startsWith('```')) {
           const lines = part.split('\n');
@@ -446,228 +266,232 @@ const CodeBlockRenderer = ({ content, folders, onSaveSnippet, onPreview, t }) =>
           const isWeb = ['html', 'css', 'javascript', 'js'].includes(lang.toLowerCase());
 
           return (
-            <div key={index} className="my-4 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#0d1117] shadow-md">
-              <div className="flex items-center justify-between px-3 py-2 bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700">
-                <span className="text-xs font-mono text-slate-500 dark:text-slate-400 uppercase">{lang}</span>
+            <div key={index} className="my-3 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-[#0d1117] shadow-sm">
+              <div className="flex items-center justify-between px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                <span className="text-[10px] font-mono text-slate-500 uppercase">{lang}</span>
                 <div className="flex items-center gap-1">
                   {isWeb && (
-                    <button 
-                      onClick={() => onPreview(code)} 
-                      className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-emerald-600 dark:text-emerald-400"
-                      title={t.preview}
-                    >
-                      <Play className="w-4 h-4" />
+                    <button onClick={() => onPreview(code)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-emerald-500" title={t.preview}>
+                      <Play className="w-3.5 h-3.5" />
                     </button>
                   )}
-                  <button onClick={() => navigator.clipboard.writeText(code)} className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400" title="Copy">
-                    <Copy className="w-4 h-4" />
+                  <button onClick={() => navigator.clipboard.writeText(code)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-500" title="Copy">
+                    <Copy className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => downloadFile(`code.${lang}`, code)} className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400" title="Download">
-                    <Download className="w-4 h-4" />
+                  <button onClick={() => downloadFile(`code.${lang}`, code)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-500" title="Download">
+                    <Download className="w-3.5 h-3.5" />
                   </button>
+                  {/* Save Menu */}
                   <div className="relative group">
-                    <button className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400" title="Save">
-                      <Save className="w-4 h-4" />
+                    <button className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-500">
+                      <Save className="w-3.5 h-3.5" />
                     </button>
-                    <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded shadow-xl hidden group-hover:block z-50">
-                      <div className="text-[10px] text-slate-400 px-2 py-1 uppercase tracking-wider">{t.save} to...</div>
-                      {folders.length === 0 ? (
-                        <div className="px-2 py-2 text-xs text-slate-500 italic">No folders</div>
-                      ) : (
-                        folders.map(f => (
-                          <button
-                            key={f.id}
-                            onClick={() => onSaveSnippet(f.id, code, lang)}
-                            className="w-full text-left px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
-                          >
-                            <Folder className="w-3 h-3" /> {f.name}
-                          </button>
-                        ))
-                      )}
+                    <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded shadow-xl hidden group-hover:block z-50 max-h-40 overflow-y-auto">
+                       {folders.length === 0 ? (
+                         <div className="p-2 text-[10px] text-slate-500">No folders</div>
+                       ) : (
+                         folders.map(f => (
+                           <button key={f.id} onClick={() => onSaveSnippet(f.id, code, lang)} className="w-full text-left px-3 py-2 text-[10px] hover:bg-slate-100 dark:hover:bg-slate-700 truncate">
+                             {f.name}
+                           </button>
+                         ))
+                       )}
                     </div>
                   </div>
                 </div>
               </div>
-              <pre className="p-4 overflow-x-auto text-sm font-mono leading-relaxed bg-white dark:bg-transparent text-slate-800 dark:text-slate-200">
-                <code className="bg-transparent">{code}</code>
+              <pre className="p-3 overflow-x-auto text-xs font-mono text-slate-200 bg-transparent scrollbar-thin">
+                <code>{code}</code>
               </pre>
             </div>
           );
-        } else {
-          return <span key={index} className="whitespace-pre-wrap">{part}</span>;
         }
+        return <p key={index} className="whitespace-pre-wrap mb-2">{part}</p>;
       })}
     </div>
   );
 };
 
-const ComparisonModal = ({ isOpen, onClose, comparison, loading, folders, onSaveSnippet, t }) => {
-  if (!isOpen) return null;
+interface ChatMessageBubbleProps {
+  msg: ChatMessage;
+  lang: 'en' | 'ar';
+  folders: Folder[];
+  onSaveSnippet: (folderId: string, code: string, lang: string) => void;
+  onPreview: (code: string) => void;
+  t: any;
+  onCompare: (msg: ChatMessage) => void;
+}
 
-  return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl flex flex-col">
-        <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
-          <div className="flex items-center gap-2">
-            <Scale className="w-6 h-6 text-yellow-500" />
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t.judgeVerdict}</h2>
+const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang, folders, onSaveSnippet, onPreview, t, onCompare }) => {
+  const isUser = msg.role === 'user';
+  const [activeTab, setActiveTab] = useState(0);
+
+  if (isUser) {
+    return (
+      <div className="flex justify-end mb-6 animate-in slide-in-from-bottom-2 fade-in duration-300">
+        <div className="max-w-[85%] md:max-w-[70%]">
+          <div className="flex items-end gap-2 flex-row-reverse">
+             <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center shrink-0 shadow-lg">
+                <User className="w-5 h-5 text-white" />
+             </div>
+             <div className="bg-purple-600 text-white rounded-2xl rounded-tr-none px-4 py-3 shadow-md">
+                <p className="whitespace-pre-wrap text-sm md:text-base">{msg.content}</p>
+             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full">
-            <X className="w-5 h-5 text-slate-500" />
-          </button>
+          <div className="text-[10px] text-slate-400 mt-1 mr-12 text-right flex items-center justify-end gap-1">
+             <Clock className="w-3 h-3" /> {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+          </div>
         </div>
+      </div>
+    );
+  }
 
-        <div className="p-6 flex-1 bg-white dark:bg-slate-900">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <Loader2 className="w-12 h-12 text-yellow-500 animate-spin" />
-              <p className="text-slate-500 dark:text-slate-300 animate-pulse">{t.thinking}</p>
-            </div>
-          ) : comparison ? (
-            <div className="space-y-6">
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-500/30 rounded-lg p-4 relative group">
-                <div className="flex items-start gap-4">
-                    <Trophy className="w-8 h-8 text-yellow-500 shrink-0 mt-1" />
-                    <div>
-                      <h3 className="text-lg font-bold text-yellow-700 dark:text-yellow-200 mb-1">{t.winner}: {comparison.winner}</h3>
-                      <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{comparison.reasoning}</p>
-                    </div>
-                </div>
+  // AI Message
+  return (
+    <div className="flex justify-start mb-8 animate-in slide-in-from-bottom-2 fade-in duration-500 delay-100 w-full">
+      <div className="w-full max-w-5xl">
+        <div className="flex items-start gap-3">
+           <div className="w-8 h-8 rounded-full bg-slate-800 dark:bg-white flex items-center justify-center shrink-0 shadow-lg mt-1">
+              <Bot className="w-5 h-5 text-white dark:text-slate-900" />
+           </div>
+           
+           <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2">
+                 <span className="font-bold text-sm text-slate-700 dark:text-slate-200">{t.ai}</span>
+                 <span className="text-[10px] text-slate-400">{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+              </div>
 
-                {/* Actions for Reasoning */}
-                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 dark:bg-black/50 rounded-lg p-1 backdrop-blur-sm">
+              {/* TABS for Mobile/Desktop Unified View */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
+                 
+                 {/* Tab Header */}
+                 <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 overflow-x-auto scrollbar-hide">
+                    {AI_MODELS_CONFIG.map((config, idx) => (
+                       <button 
+                         key={config.id}
+                         onClick={() => setActiveTab(idx)}
+                         className={`flex-1 py-3 px-4 flex items-center justify-center gap-2 text-xs md:text-sm font-medium transition-all whitespace-nowrap ${
+                            activeTab === idx 
+                              ? `bg-white dark:bg-slate-900 ${config.colorClass.split(' ')[0]} border-b-2 ${config.colorClass.split(' ')[0].replace('text-', 'border-')}` 
+                              : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900'
+                         }`}
+                       >
+                          {config.icon}
+                          <span className="hidden sm:inline">{config.name}</span>
+                          <span className="sm:hidden">{config.shortName}</span>
+                       </button>
+                    ))}
+                 </div>
+
+                 {/* Tab Content */}
+                 <div className="p-4 md:p-6 min-h-[150px] bg-white dark:bg-slate-900/50 relative">
+                    {AI_MODELS_CONFIG.map((config, idx) => {
+                       const data = msg.modelsData?.[idx];
+                       if (activeTab !== idx) return null;
+
+                       return (
+                          <div key={idx} className="animate-in fade-in duration-200">
+                             {data?.loading ? (
+                                <div className="flex flex-col items-center justify-center py-10 opacity-60">
+                                   <Loader2 className="w-8 h-8 animate-spin text-slate-400 mb-2" />
+                                   <span className="text-xs text-slate-500">{t.thinking}</span>
+                                </div>
+                             ) : data?.error ? (
+                                <div className="text-red-500 text-sm p-4 bg-red-50 dark:bg-red-900/10 rounded-lg">{data.error}</div>
+                             ) : (
+                                <CodeBlock 
+                                  content={data?.text || ''} 
+                                  folders={folders} 
+                                  onSaveSnippet={onSaveSnippet}
+                                  onPreview={onPreview}
+                                  t={t}
+                                />
+                             )}
+                          </div>
+                       );
+                    })}
+                 </div>
+
+                 {/* Footer Actions */}
+                 <div className="bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 p-2 flex justify-end">
                     <button 
-                        onClick={() => navigator.clipboard.writeText(comparison.reasoning)} 
-                        className="p-1.5 hover:bg-yellow-200 dark:hover:bg-yellow-800 rounded text-yellow-700 dark:text-yellow-200 transition-colors"
-                        title="Copy Analysis"
+                      onClick={() => onCompare(msg)}
+                      className="text-xs flex items-center gap-1 px-3 py-1.5 bg-yellow-400 hover:bg-yellow-300 text-slate-900 rounded-full font-bold transition-colors shadow-sm"
                     >
-                        <Copy className="w-4 h-4" />
+                       <Scale className="w-3.5 h-3.5" /> {t.judge}
                     </button>
-                    
-                    <div className="relative group/save">
-                        <button 
-                            className="p-1.5 hover:bg-yellow-200 dark:hover:bg-yellow-800 rounded text-yellow-700 dark:text-yellow-200 transition-colors"
-                            title={t.save}
-                        >
-                            <Save className="w-4 h-4" />
-                        </button>
-                        {/* Dropdown */}
-                         <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded shadow-xl hidden group-hover/save:block z-50">
-                            <div className="text-[10px] text-slate-400 px-2 py-1 uppercase tracking-wider">{t.save} to...</div>
-                            {folders.length === 0 ? (
-                                <div className="px-2 py-2 text-xs text-slate-500 italic">No folders</div>
-                            ) : (
-                                folders.map(f => (
-                                <button
-                                    key={f.id}
-                                    onClick={() => onSaveSnippet(f.id, comparison.reasoning, 'txt')}
-                                    className="w-full text-left px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
-                                >
-                                    <Folder className="w-3 h-3" /> {f.name}
-                                </button>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                </div>
+                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {comparison.scores.map((score, idx) => (
-                  <div key={idx} className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-                    <h4 className="font-semibold text-slate-900 dark:text-white mb-2">{score.model}</h4>
-                    <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400 mb-1">
-                      <span>{t.performance}</span>
-                      <span className="text-slate-900 dark:text-white">{score.performance}/10</span>
+              {/* Comparison Result if exists */}
+              {msg.comparison && (
+                 <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-700/30 rounded-xl p-4 animate-in slide-in-from-top-2">
+                    <div className="flex items-center gap-2 mb-2 text-yellow-700 dark:text-yellow-400 font-bold text-sm">
+                       <Trophy className="w-4 h-4" /> {t.judgeVerdict}
                     </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full mb-3">
-                      <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${score.performance * 10}%` }}></div>
+                    <div className="text-sm text-slate-700 dark:text-slate-300 mb-3">
+                       <span className="font-bold">{t.winner}:</span> {msg.comparison.winner}
                     </div>
-                    
-                    <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400 mb-1">
-                      <span>{t.cleanliness}</span>
-                      <span className="text-slate-900 dark:text-white">{score.cleanliness}/10</span>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">{msg.comparison.reasoning}</p>
+                    <div className="grid grid-cols-3 gap-2">
+                       {msg.comparison.scores.map((s: any, i: number) => (
+                          <div key={i} className="bg-white dark:bg-slate-800 p-2 rounded border border-yellow-100 dark:border-yellow-900/20 text-center">
+                             <div className="text-[10px] text-slate-500 truncate">{s.model}</div>
+                             <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{s.performance}/10</div>
+                          </div>
+                       ))}
                     </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full">
-                      <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${score.cleanliness * 10}%` }}></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="text-center text-slate-500">No data.</div>
-          )}
+                 </div>
+              )}
+           </div>
         </div>
       </div>
     </div>
   );
 };
 
-const ResponseCard = ({ config, content, loading, error, folders, onSaveSnippet, onPreview, t }) => {
-  return (
-    <div className={`flex flex-col h-full border rounded-xl overflow-hidden ${config.color} border-slate-200 dark:border-transparent transition-colors shadow-sm`}>
-      <div className="p-3 border-b border-black/5 dark:border-white/5 flex items-center gap-2 bg-white/50 dark:bg-black/20">
-        {config.icon}
-        <div>
-          <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm leading-tight">{config.name}</h3>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">{config.sub}</p>
-        </div>
-      </div>
-      <div className="flex-1 p-4 overflow-y-auto min-h-[300px] text-sm md:text-base bg-white/30 dark:bg-transparent">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center h-full space-y-3 opacity-70">
-            <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-            <span className="text-xs text-slate-500">{t.thinking}</span>
-          </div>
-        ) : error ? (
-          <div className="text-red-500 p-2 text-center text-sm">{error}</div>
-        ) : content ? (
-          <CodeBlockRenderer 
-            content={content} 
-            folders={folders}
-            onSaveSnippet={onSaveSnippet}
-            onPreview={onPreview}
-            t={t}
-          />
-        ) : (
-          <div className="text-slate-400 dark:text-slate-600 italic text-center mt-10 text-xs">{t.waiting}</div>
-        )}
-      </div>
-    </div>
-  );
-};
+// --- Main App ---
 
 const App = () => {
-  // Settings State
+  // Safe initialization of AI
+  const ai = useMemo(() => {
+    try {
+      if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+         return new GoogleGenAI({ apiKey: process.env.API_KEY });
+      } else {
+         console.warn("API Key might be missing or process.env is undefined.");
+         // Fallback usually not possible without key, but prevents crash
+         return null; 
+      }
+    } catch (e) {
+      console.error("AI Init Error", e);
+      return null;
+    }
+  }, []);
+
   const [lang, setLang] = useState<'en' | 'ar'>('en');
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('dark');
   const t = TRANSLATIONS[lang];
 
-  // Core State
-  const [prompt, setPrompt] = useState('');
-  const [responses, setResponses] = useState({ 0: '', 1: '', 2: '' });
-  const [loading, setLoading] = useState({ 0: false, 1: false, 2: false });
-  const [errors, setErrors] = useState({ 0: null, 1: null, 2: null });
-  const [folders, setFolders] = useState<Folder[]>(() => JSON.parse(localStorage.getItem('tricoder_folders') || '[]'));
-  const [history, setHistory] = useState<HistoryItem[]>(() => JSON.parse(localStorage.getItem('tricoder_history') || '[]'));
+  // Core Data
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [folders, setFolders] = useState<Folder[]>(() => {
+    try { return JSON.parse(localStorage.getItem('tricoder_folders') || '[]'); } catch { return []; }
+  });
   
   // UI State
+  const [prompt, setPrompt] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [previewContent, setPreviewContent] = useState<string | null>(null);
-  const [showComparison, setShowComparison] = useState(false);
-  const [isComparing, setIsComparing] = useState(false);
-  const [comparisonResult, setComparisonResult] = useState(null);
-  const [activeTab, setActiveTab] = useState(0);
-
-  // Advanced Features State
-  const [deepThinking, setDeepThinking] = useState(false);
   const [attachedFile, setAttachedFile] = useState<{name: string, data: string, mime: string} | null>(null);
-  const [isListening, setIsListening] = useState(false);
   const [activeToolId, setActiveToolId] = useState<string | null>(null);
+  const [deepThinking, setDeepThinking] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  
+  const scrollEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Define Tools
+  // Tools
   const tools: Tool[] = useMemo(() => [
     { id: 'debug', icon: <Bug className="w-4 h-4" />, label: t.tools.debug, prompt: "Find and fix bugs in the code. Think deeply about edge cases for the following request:" },
     { id: 'refactor', icon: <FileCode className="w-4 h-4" />, label: t.tools.refactor, prompt: "Refactor this code for better performance and readability:" },
@@ -676,166 +500,151 @@ const App = () => {
     { id: 'convert', icon: <ExternalLink className="w-4 h-4" />, label: t.tools.convert, prompt: "Convert this code to a different language/framework (infer target from context or provide best alternative):" },
   ], [t]);
 
-  // Theme Effect
+  // Effects
   useEffect(() => {
     const root = document.documentElement;
-    const applyTheme = (th) => {
-      if (th === 'dark') { root.classList.add('dark'); root.style.colorScheme = 'dark'; }
-      else { root.classList.remove('dark'); root.style.colorScheme = 'light'; }
-    };
-    
     if (theme === 'system') {
-      const media = window.matchMedia('(prefers-color-scheme: dark)');
-      applyTheme(media.matches ? 'dark' : 'light');
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.classList.toggle('dark', isDark);
     } else {
-      applyTheme(theme);
+      root.classList.toggle('dark', theme === 'dark');
     }
   }, [theme]);
 
-  // Persist Data
-  useEffect(() => { localStorage.setItem('tricoder_folders', JSON.stringify(folders)); }, [folders]);
-  useEffect(() => { localStorage.setItem('tricoder_history', JSON.stringify(history)); }, [history]);
-  
-  // Direction for Arabic
   useEffect(() => { document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'; }, [lang]);
+  
+  useEffect(() => { localStorage.setItem('tricoder_folders', JSON.stringify(folders)); }, [folders]);
 
-  const allFinished = Object.values(loading).every(l => !l) && Object.values(responses).some(r => (r as string).length > 0);
-
-  // Save to history when all finished
   useEffect(() => {
-    if (allFinished && prompt) {
-      // Check if this specific response set is already saved (simple check)
-      const lastHistory = history[history.length - 1];
-      if (!lastHistory || lastHistory.prompt !== prompt) {
-         setHistory(prev => [...prev, { id: generateId(), timestamp: Date.now(), prompt, responses }]);
-      }
-    }
-  }, [allFinished]);
+    scrollEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Handlers
+  const handleSaveSnippet = (folderId: string, code: string, snippetLang: string) => {
+    setFolders(prev => prev.map(f => f.id === folderId ? {
+      ...f,
+      snippets: [...f.snippets, { id: generateId(), title: `Snippet ${Date.now()}`, code, language: snippetLang, timestamp: Date.now() }]
+    } : f));
+    alert('Saved!');
+  };
 
   const handleNewChat = () => {
+    setMessages([]);
     setPrompt('');
-    setResponses({ 0: '', 1: '', 2: '' });
     setAttachedFile(null);
-    setDeepThinking(false);
-    setActiveToolId(null);
   };
 
-  const handleHistoryLoad = (item: HistoryItem) => {
-    setPrompt(item.prompt);
-    setResponses(item.responses);
-    setIsSidebarOpen(false);
-  };
-
-  const handleFileSelect = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    try {
-      const base64 = await blobToBase64(file);
-      const base64Data = base64.split(',')[1];
-      setAttachedFile({
-        name: file.name,
-        data: base64Data,
-        mime: file.type || 'application/octet-stream'
-      });
-    } catch (err) { alert('File load error'); }
-  };
-
-  const toggleVoice = () => {
-    if (isListening) { setIsListening(false); return; }
-    
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) { alert('Browser does not support voice.'); return; }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = lang === 'ar' ? 'ar-SA' : 'en-US';
-    recognition.interimResults = false;
-    
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    recognition.onresult = (e) => {
-      const transcript = e.results[0][0].transcript;
-      setPrompt(prev => prev + (prev ? ' ' : '') + transcript);
-    };
-    
-    recognition.start();
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!prompt.trim() && !attachedFile) return;
+    if ((!prompt.trim() && !attachedFile) || !ai) return;
 
-    setResponses({ 0: '', 1: '', 2: '' });
-    setErrors({ 0: null, 1: null, 2: null });
-    setComparisonResult(null);
-    setLoading({ 0: true, 1: true, 2: true });
+    const currentPrompt = prompt;
+    const currentFile = attachedFile;
+    
+    // 1. Clear Input immediately
+    setPrompt('');
+    setAttachedFile(null);
 
+    // 2. Add User Message
+    const userMsgId = generateId();
+    const newUserMsg: ChatMessage = {
+      id: userMsgId,
+      role: 'user',
+      content: (currentFile ? `[File: ${currentFile.name}] ` : '') + currentPrompt,
+      timestamp: Date.now()
+    };
+
+    // 3. Add Placeholder AI Message
+    const aiMsgId = generateId();
+    const newAiMsg: ChatMessage = {
+      id: aiMsgId,
+      role: 'model',
+      timestamp: Date.now(),
+      modelsData: {
+        0: { text: '', loading: true, error: null },
+        1: { text: '', loading: true, error: null },
+        2: { text: '', loading: true, error: null }
+      }
+    };
+
+    setMessages(prev => [...prev, newUserMsg, newAiMsg]);
+
+    // 4. Trigger Generations
     AI_MODELS_CONFIG.forEach((config, index) => {
-      generateForModel(index, config.baseSystemInstruction);
+      generateForModel(index, currentPrompt, currentFile, aiMsgId, config.baseSystemInstruction);
     });
   };
 
-  const generateForModel = async (index, baseSystemInstruction) => {
+  const generateForModel = async (index: number, userPrompt: string, file: any, msgId: string, baseSysInstruction: string) => {
+    if (!ai) return;
     try {
-      let finalSystemInstruction = baseSystemInstruction;
-      if (deepThinking) {
-        finalSystemInstruction += "\n\nCRITICAL: ENABLE DEEP THINKING MODE. Before providing the final code or answer, you must output a <thinking> block where you break down the problem step-by-step, consider edge cases, and plan the architecture. Close the </thinking> block, then provide the solution.";
-      }
-      if (lang === 'ar') {
-        finalSystemInstruction += "\n\nCRITICAL RULE: The user has selected ARABIC language. You MUST provide all explanations, analysis, and non-code text in ARABIC. Do NOT use English for explanations. Only use English for code blocks and specific technical terms.";
-      }
+      let sys = baseSysInstruction;
+      if (deepThinking) sys += "\n\nCRITICAL: ENABLE DEEP THINKING. Output a <thinking> block first.";
+      if (lang === 'ar') sys += "\n\nCRITICAL: Output explanation in ARABIC.";
 
-      // Check active tool and prepend its prompt
       const activeTool = tools.find(t => t.id === activeToolId);
-      const effectivePrompt = (activeTool ? `[TASK: ${activeTool.label.toUpperCase()} - ${activeTool.prompt}]\n\n` : "") + prompt;
+      const finalPrompt = (activeTool ? `[TASK: ${activeTool.label} - ${activeTool.prompt}]\n\n` : "") + userPrompt;
 
       const parts: any[] = [];
-      if (attachedFile) {
-        parts.push({ inlineData: { mimeType: attachedFile.mime, data: attachedFile.data } });
-      }
-      parts.push({ text: effectivePrompt });
+      if (file) parts.push({ inlineData: { mimeType: file.mime, data: file.data } });
+      parts.push({ text: finalPrompt });
 
-      const response = await ai.models.generateContent({
+      const result = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: { parts },
-        config: { systemInstruction: finalSystemInstruction }
+        config: { systemInstruction: sys }
       });
-      
-      const text = response.text;
-      setResponses(prev => ({ ...prev, [index]: text }));
+
+      setMessages(prev => prev.map(m => {
+        if (m.id === msgId && m.modelsData) {
+          return {
+            ...m,
+            modelsData: {
+              ...m.modelsData,
+              [index]: { text: result.text, loading: false, error: null }
+            }
+          };
+        }
+        return m;
+      }));
+
     } catch (err) {
-      console.error(err);
-      setErrors(prev => ({ ...prev, [index]: t.error }));
-    } finally {
-      setLoading(prev => ({ ...prev, [index]: false }));
+      setMessages(prev => prev.map(m => {
+        if (m.id === msgId && m.modelsData) {
+          return {
+            ...m,
+            modelsData: {
+              ...m.modelsData,
+              [index]: { text: '', loading: false, error: 'Failed to generate.' }
+            }
+          };
+        }
+        return m;
+      }));
     }
   };
 
-  const handleCompare = async () => {
-    setShowComparison(true);
-    setIsComparing(true);
-    setComparisonResult(null);
-
+  const handleCompare = async (msg: ChatMessage) => {
+    if (!ai || !msg.modelsData) return;
+    
+    // Set loading state for comparison inside the message if I had a field for it, 
+    // but for simplicity I'll just trigger it and update when done.
+    // Ideally add a 'comparing' boolean to ChatMessage type.
+    
     try {
-      const languageInstruction = lang === 'ar' 
-        ? "CRITICAL: The user interface is in Arabic. You MUST provide the 'reasoning' field strictly in ARABIC. Do not write the reasoning in English." 
-        : "";
-
-      const comparisonPrompt = `
-        User Question: "${prompt}"
+      const promptText = `
+        Compare these 3 solutions:
+        1: ${msg.modelsData[0].text}
+        2: ${msg.modelsData[1].text}
+        3: ${msg.modelsData[2].text}
         
-        Solution 1 (${AI_MODELS_CONFIG[0].name}): ${responses[0]}
-        Solution 2 (${AI_MODELS_CONFIG[1].name}): ${responses[1]}
-        Solution 3 (${AI_MODELS_CONFIG[2].name}): ${responses[2]}
-        
-        Act as a "Supreme Code Judge". Compare these 3 solutions.
-        Evaluate based on: Logic Quality, Code Efficiency, and Clarity.
-        Decide a winner.
-        ${languageInstruction}
+        Pick a winner based on code quality and logic.
+        ${lang === 'ar' ? 'Reasoning MUST be in Arabic.' : ''}
       `;
 
-      const response = await ai.models.generateContent({
+      const res = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: comparisonPrompt,
+        contents: promptText,
         config: {
           responseMimeType: 'application/json',
           responseSchema: {
@@ -859,242 +668,201 @@ const App = () => {
         }
       });
 
-      const result = JSON.parse(response.text);
-      setComparisonResult(result);
-    } catch (err) {
-      console.error("Comparison failed", err);
-      setComparisonResult({ winner: "Error", reasoning: "Comparison failed.", scores: [] });
-    } finally {
-      setIsComparing(false);
+      const comparison = JSON.parse(res.text || '{}');
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, comparison } : m));
+
+    } catch (e) {
+      alert("Comparison failed.");
     }
   };
 
-  const handleSaveSnippet = (folderId, code, snippetLang) => {
-    setFolders(prev => prev.map(f => {
-      if (f.id === folderId) {
-        return {
-          ...f,
-          snippets: [...f.snippets, {
-            id: generateId(),
-            title: `Snippet ${new Date().toLocaleTimeString()}`,
-            code,
-            language: snippetLang,
-            timestamp: Date.now()
-          }]
-        };
-      }
-      return f;
-    }));
-    alert('Saved!');
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const b64 = await blobToBase64(file);
+        setAttachedFile({ name: file.name, data: b64.split(',')[1], mime: file.type });
+      } catch (e) { alert("File error"); }
+    }
   };
 
   const handleBackupZip = async () => {
     const zip = new JSZip();
-    zip.file("project_meta.json", JSON.stringify({ exportDate: new Date().toISOString(), appName: "Tri-Coder AI" }));
-    folders.forEach(folder => {
-      const folderRef = zip.folder(folder.name || "Untitled");
-      if (folderRef) {
-        folder.snippets.forEach(snippet => {
-          const fileName = `${snippet.title.replace(/[^a-z0-9]/gi, '_')}.${snippet.language || 'txt'}`;
-          folderRef.file(fileName, snippet.code);
-        });
-      }
+    folders.forEach(f => {
+       f.snippets.forEach(s => {
+          zip.file(`${f.name}/${s.title}.${s.language}`, s.code);
+       });
     });
-    const content = await zip.generateAsync({ type: "blob" });
-    const url = URL.createObjectURL(content);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "TriCoder_Project.zip";
-    link.click();
+    const blob = await zip.generateAsync({type:'blob'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tricoder-backup.zip';
+    a.click();
   };
 
+  // Render
   return (
     <ErrorBoundary>
-      <div className="flex flex-col h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-200 font-sans transition-colors duration-300">
+      <div className="flex flex-col h-[100dvh] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-200 font-sans">
         
-        <Sidebar 
-          isOpen={isSidebarOpen} 
-          onClose={() => setIsSidebarOpen(false)}
-          folders={folders}
-          setFolders={setFolders}
-          history={history}
-          setHistory={setHistory}
-          onLoadHistory={handleHistoryLoad}
-          onRestore={setFolders}
-          onBackupZip={handleBackupZip}
-          lang={lang}
-          setLang={setLang}
-          theme={theme}
-          setTheme={setTheme}
-          t={t}
-        />
-
         {/* Header */}
-        <header className="h-16 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-10 transition-colors">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setIsSidebarOpen(true)} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg">
-              <Menu className="w-5 h-5 text-slate-600 dark:text-slate-300" />
-            </button>
-            <div className="flex items-center gap-2">
-              <Sparkles className="text-purple-600 dark:text-purple-500 w-6 h-6" />
-              <div>
-                <h1 className="font-bold text-lg leading-tight bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent">
-                  {t.appTitle}
-                </h1>
-                <p className="text-[10px] text-slate-500 hidden md:block">{t.subTitle}</p>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-             <button onClick={handleNewChat} className="flex items-center gap-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-full text-xs font-medium transition-colors">
-                <Plus className="w-4 h-4" /> <span className="hidden sm:inline">{t.newChat}</span>
+        <header className="h-14 shrink-0 bg-white/80 dark:bg-slate-950/80 backdrop-blur border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 sticky top-0 z-30">
+           <div className="flex items-center gap-3">
+             <button onClick={() => setIsSidebarOpen(true)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+               <Menu className="w-5 h-5 text-slate-600 dark:text-slate-400" />
              </button>
-          </div>
+             <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-600" />
+                <h1 className="font-bold text-lg bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent">{t.appTitle}</h1>
+             </div>
+           </div>
+           <button onClick={handleNewChat} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700">
+              <Plus className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+           </button>
         </header>
 
-        {/* Main Content */}
-        <main className="flex-1 overflow-hidden relative flex flex-col p-4 md:p-6 gap-4">
-          
-          {/* Mobile Tabs */}
-          <div className="md:hidden flex space-x-1 bg-slate-200 dark:bg-slate-900 p-1 rounded-lg border border-slate-300 dark:border-slate-800">
-            {AI_MODELS_CONFIG.map((config, idx) => (
-              <button
-                key={config.id}
-                onClick={() => setActiveTab(idx)}
-                className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
-                  activeTab === idx 
-                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' 
-                    : 'text-slate-500 dark:text-slate-500'
-                }`}
-              >
-                {config.name}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex-1 min-h-0 relative">
-            <div className="h-full grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-              {AI_MODELS_CONFIG.map((config, idx) => (
-                <div key={config.id} className={`h-full ${activeTab === idx ? 'block' : 'hidden md:block'}`}>
-                  <ResponseCard 
-                    config={config} 
-                    content={responses[idx]} 
-                    loading={loading[idx]} 
-                    error={errors[idx]}
-                    folders={folders}
-                    onSaveSnippet={handleSaveSnippet}
-                    onPreview={setPreviewContent}
-                    t={t}
-                  />
+        {/* Sidebar */}
+        {isSidebarOpen && (
+          <div className="fixed inset-0 z-50 flex">
+             <div className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col shadow-2xl animate-in slide-in-from-left duration-200">
+                <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                   <span className="font-bold">{t.settings}</span>
+                   <button onClick={() => setIsSidebarOpen(false)}><X className="w-5 h-5" /></button>
                 </div>
-              ))}
-            </div>
+                
+                <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                   <div>
+                      <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">{t.language}</h3>
+                      <div className="flex gap-2">
+                         <button onClick={() => setLang('en')} className={`flex-1 py-2 text-xs rounded border ${lang === 'en' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-600' : 'border-slate-200 dark:border-slate-700'}`}>English</button>
+                         <button onClick={() => setLang('ar')} className={`flex-1 py-2 text-xs rounded border ${lang === 'ar' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-600' : 'border-slate-200 dark:border-slate-700'}`}>العربية</button>
+                      </div>
+                   </div>
 
-            {allFinished && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
-                <button
-                  onClick={handleCompare}
-                  className="group flex items-center gap-2 bg-yellow-400 text-slate-900 font-bold py-2 px-6 rounded-full shadow-lg hover:bg-yellow-300 transition-all active:scale-95 border border-yellow-500/20"
-                >
-                  <Scale className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-                  {t.judge}
-                </button>
-              </div>
-            )}
+                   <div>
+                      <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">{t.theme}</h3>
+                      <div className="flex gap-2">
+                         <button onClick={() => setTheme('light')} className={`flex-1 py-2 rounded border flex justify-center ${theme === 'light' ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' : 'border-slate-200 dark:border-slate-700'}`}><Sun className="w-4 h-4" /></button>
+                         <button onClick={() => setTheme('dark')} className={`flex-1 py-2 rounded border flex justify-center ${theme === 'dark' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-slate-200 dark:border-slate-700'}`}><Moon className="w-4 h-4" /></button>
+                         <button onClick={() => setTheme('system')} className={`flex-1 py-2 rounded border flex justify-center ${theme === 'system' ? 'border-slate-500 bg-slate-100 dark:bg-slate-800' : 'border-slate-200 dark:border-slate-700'}`}><Monitor className="w-4 h-4" /></button>
+                      </div>
+                   </div>
+
+                   <div>
+                      <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">{t.folders}</h3>
+                      <div className="space-y-2">
+                        {folders.map(f => (
+                           <div key={f.id} className="text-sm flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-800 rounded">
+                              <Folder className="w-4 h-4 text-yellow-500" /> {f.name} <span className="text-xs text-slate-400">({f.snippets.length})</span>
+                           </div>
+                        ))}
+                        {folders.length === 0 && <p className="text-xs text-slate-500 italic">Empty</p>}
+                      </div>
+                   </div>
+                   
+                   <button onClick={handleBackupZip} className="w-full py-2 bg-slate-100 dark:bg-slate-800 rounded text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-200">
+                      <Archive className="w-4 h-4" /> {t.downloadZip}
+                   </button>
+                </div>
+             </div>
+             <div className="flex-1 bg-black/20 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)}></div>
           </div>
-        </main>
+        )}
+
+        {/* Chat Area */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
+           {messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full opacity-30 pointer-events-none">
+                 <BrainCircuit className="w-24 h-24 mb-4" />
+                 <p className="text-xl font-bold">{t.appTitle}</p>
+                 <p className="text-sm">{t.subTitle}</p>
+              </div>
+           ) : (
+             messages.map(msg => (
+               <ChatMessageBubble 
+                  key={msg.id} 
+                  msg={msg} 
+                  lang={lang} 
+                  folders={folders} 
+                  onSaveSnippet={handleSaveSnippet} 
+                  onPreview={setPreviewContent}
+                  onCompare={handleCompare}
+                  t={t} 
+               />
+             ))
+           )}
+           <div ref={scrollEndRef} className="h-4" />
+        </div>
 
         {/* Input Area */}
-        <footer className="p-4 md:p-6 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 z-20 transition-colors">
-          <div className="max-w-5xl mx-auto space-y-3">
-            
-            <div className="flex justify-between items-end">
-               <SmartToolbar tools={tools} activeToolId={activeToolId} onToggle={setActiveToolId} />
-               <button 
-                 onClick={() => setDeepThinking(!deepThinking)} 
-                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors mb-2 ${deepThinking ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 border-purple-200 dark:border-purple-700' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-               >
-                 <BrainCircuit className="w-4 h-4" /> {deepThinking ? t.deepThinkingOn : t.deepThinking}
-               </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="relative">
-               {attachedFile && (
-                  <div className="absolute -top-10 left-0 bg-slate-200 dark:bg-slate-800 px-3 py-1 rounded-t-lg text-xs flex items-center gap-2 text-slate-700 dark:text-slate-300 border border-b-0 border-slate-300 dark:border-slate-700">
-                    <Paperclip className="w-3 h-3" /> {attachedFile.name}
-                    <button type="button" onClick={() => setAttachedFile(null)} className="hover:text-red-500"><X className="w-3 h-3" /></button>
-                  </div>
-               )}
+        <div className="shrink-0 p-4 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 z-20">
+           <div className="max-w-4xl mx-auto">
               
-              <div className="relative">
-                <input
-                  type="text"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder={isListening ? t.voiceListening : t.inputPlaceholder}
-                  className={`w-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 border rounded-xl pl-12 pr-24 py-4 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm ${attachedFile ? 'rounded-tl-none' : ''} ${isListening ? 'border-red-500 animate-pulse' : 'border-slate-300 dark:border-slate-700'}`}
-                />
-                
-                {/* Left Actions */}
-                <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                   <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*,.txt,.js,.py,.html,.css,.json,.md" />
-                   <button 
-                     type="button" 
-                     onClick={() => fileInputRef.current?.click()}
-                     className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full text-slate-500 dark:text-slate-400 transition-colors"
-                     title="Attach file"
-                   >
-                     <Paperclip className="w-5 h-5" />
-                   </button>
-                </div>
-
-                {/* Right Actions */}
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                   <button 
-                     type="button" 
-                     onClick={toggleVoice}
-                     className={`p-2 rounded-full transition-colors ${isListening ? 'bg-red-100 dark:bg-red-900/30 text-red-500' : 'hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400'}`}
-                     title="Voice Input"
-                   >
-                     <Mic className="w-5 h-5" />
-                   </button>
-                   <button 
-                     type="submit" 
-                     disabled={Object.values(loading).some(l => l) || (!prompt.trim() && !attachedFile)}
-                     className="p-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-purple-900/10"
-                   >
-                     {Object.values(loading).some(l => l) ? (
-                       <Loader2 className="w-5 h-5 animate-spin" />
-                     ) : (
-                       <Send className="w-5 h-5" />
-                     )}
-                   </button>
-                </div>
+              {/* Toolbar */}
+              <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
+                 {tools.map(tool => (
+                    <button 
+                      key={tool.id} 
+                      onClick={() => setActiveToolId(activeToolId === tool.id ? null : tool.id)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap border transition-all ${activeToolId === tool.id ? 'bg-purple-100 border-purple-300 text-purple-700 dark:bg-purple-900/40 dark:border-purple-600 dark:text-purple-300' : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
+                    >
+                       {tool.icon} {tool.label}
+                    </button>
+                 ))}
+                 <button 
+                    onClick={() => setDeepThinking(!deepThinking)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap border transition-all ${deepThinking ? 'bg-indigo-100 border-indigo-300 text-indigo-700 dark:bg-indigo-900/40 dark:border-indigo-600 dark:text-indigo-300' : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
+                 >
+                    <BrainCircuit className="w-3.5 h-3.5" /> {deepThinking ? t.deepThinkingOn : t.deepThinking}
+                 </button>
               </div>
-            </form>
-          </div>
-        </footer>
 
-        {/* Modals */}
-        <ComparisonModal 
-          isOpen={showComparison} 
-          onClose={() => setShowComparison(false)} 
-          comparison={comparisonResult}
-          loading={isComparing}
-          folders={folders}
-          onSaveSnippet={handleSaveSnippet}
-          t={t}
-        />
-        
-        <PreviewModal 
-          isOpen={!!previewContent}
-          onClose={() => setPreviewContent(null)}
-          code={previewContent}
-        />
+              {/* Input Box */}
+              <form onSubmit={handleSubmit} className="relative group">
+                 {attachedFile && (
+                    <div className="absolute -top-10 left-0 flex items-center gap-2 bg-slate-200 dark:bg-slate-800 px-3 py-1.5 rounded-t-lg text-xs text-slate-700 dark:text-slate-300 border border-b-0 border-slate-300 dark:border-slate-700">
+                       <Paperclip className="w-3 h-3" /> <span className="max-w-[150px] truncate">{attachedFile.name}</span>
+                       <button type="button" onClick={() => setAttachedFile(null)}><X className="w-3 h-3 hover:text-red-500" /></button>
+                    </div>
+                 )}
+                 
+                 <div className="relative">
+                    <input 
+                      type="text" 
+                      value={prompt}
+                      onChange={e => setPrompt(e.target.value)}
+                      placeholder={isListening ? t.voiceListening : t.inputPlaceholder}
+                      className={`w-full bg-slate-100 dark:bg-slate-900 border text-slate-900 dark:text-slate-100 rounded-2xl pl-12 pr-14 py-3.5 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all ${attachedFile ? 'rounded-tl-none' : ''} ${isListening ? 'border-red-500 animate-pulse' : 'border-slate-200 dark:border-slate-800'}`}
+                    />
+                    
+                    <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center">
+                       <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileSelect} />
+                       <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                          <Paperclip className="w-5 h-5" />
+                       </button>
+                    </div>
+
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                       <button type="button" onClick={() => setIsListening(!isListening)} className={`p-2 rounded-full transition-colors ${isListening ? 'bg-red-50 text-red-500' : 'text-slate-400 hover:text-slate-600'}`}>
+                          <Mic className="w-5 h-5" />
+                       </button>
+                       <button disabled={(!prompt.trim() && !attachedFile) || !ai} type="submit" className="p-2 bg-purple-600 text-white rounded-xl hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-600/20 transition-all active:scale-95">
+                          <Send className="w-4 h-4" />
+                       </button>
+                    </div>
+                 </div>
+              </form>
+           </div>
+        </div>
+
+        {/* Preview Modal */}
+        <PreviewModal isOpen={!!previewContent} onClose={() => setPreviewContent(null)} code={previewContent} />
+
       </div>
     </ErrorBoundary>
   );
 };
 
-const root = createRoot(document.getElementById('root'));
+const root = createRoot(document.getElementById('root')!);
 root.render(<App />);
