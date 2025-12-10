@@ -42,13 +42,7 @@
 </head>
 <body>
   <div id="root"></div>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js');
-      });
-    }
-  </script>
+  <!-- Service Worker removed to prevent white screen issues in dev environments -->
   <script type="module" src="index.tsx"></script>
 </body>
 </html>

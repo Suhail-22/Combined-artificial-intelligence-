@@ -6,8 +6,51 @@ import {
   Send, Scale, Code2, BrainCircuit, MessageSquare, Trophy, X, Loader2, Sparkles,
   Save, FolderPlus, Download, Play, Copy, Folder, Trash2, FileJson, 
   Menu, Bug, FileCode, BookOpen, TestTube, Eraser, Archive, ExternalLink,
-  Mic, Paperclip, Plus, History, Settings, Moon, Sun, Monitor, Languages, Eye
+  Mic, Paperclip, Plus, History, Settings, Moon, Sun, Monitor, Languages, Eye, AlertTriangle
 } from 'lucide-react';
+
+// --- Error Boundary ---
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-screen bg-slate-900 text-white p-6 text-center">
+          <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />
+          <h1 className="text-2xl font-bold mb-2">Something went wrong</h1>
+          <p className="text-slate-400 mb-4 max-w-md">The application encountered an error. Please try refreshing the page.</p>
+          <pre className="bg-slate-800 p-4 rounded text-left text-xs text-red-300 overflow-auto w-full max-w-lg">
+            {this.state.error?.toString()}
+          </pre>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-6 px-6 py-2 bg-purple-600 rounded-full font-bold hover:bg-purple-500 transition-colors"
+          >
+            Reload App
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // --- Constants & Translations ---
 
@@ -866,188 +909,190 @@ const App = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-200 font-sans transition-colors duration-300">
-      
-      <Sidebar 
-        isOpen={isSidebarOpen} 
-        onClose={() => setIsSidebarOpen(false)}
-        folders={folders}
-        setFolders={setFolders}
-        history={history}
-        setHistory={setHistory}
-        onLoadHistory={handleHistoryLoad}
-        onRestore={setFolders}
-        onBackupZip={handleBackupZip}
-        lang={lang}
-        setLang={setLang}
-        theme={theme}
-        setTheme={setTheme}
-        t={t}
-      />
+    <ErrorBoundary>
+      <div className="flex flex-col h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-200 font-sans transition-colors duration-300">
+        
+        <Sidebar 
+          isOpen={isSidebarOpen} 
+          onClose={() => setIsSidebarOpen(false)}
+          folders={folders}
+          setFolders={setFolders}
+          history={history}
+          setHistory={setHistory}
+          onLoadHistory={handleHistoryLoad}
+          onRestore={setFolders}
+          onBackupZip={handleBackupZip}
+          lang={lang}
+          setLang={setLang}
+          theme={theme}
+          setTheme={setTheme}
+          t={t}
+        />
 
-      {/* Header */}
-      <header className="h-16 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-10 transition-colors">
-        <div className="flex items-center gap-4">
-          <button onClick={() => setIsSidebarOpen(true)} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg">
-            <Menu className="w-5 h-5 text-slate-600 dark:text-slate-300" />
-          </button>
-          <div className="flex items-center gap-2">
-            <Sparkles className="text-purple-600 dark:text-purple-500 w-6 h-6" />
-            <div>
-              <h1 className="font-bold text-lg leading-tight bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent">
-                {t.appTitle}
-              </h1>
-              <p className="text-[10px] text-slate-500 hidden md:block">{t.subTitle}</p>
+        {/* Header */}
+        <header className="h-16 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-10 transition-colors">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setIsSidebarOpen(true)} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg">
+              <Menu className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+            </button>
+            <div className="flex items-center gap-2">
+              <Sparkles className="text-purple-600 dark:text-purple-500 w-6 h-6" />
+              <div>
+                <h1 className="font-bold text-lg leading-tight bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent">
+                  {t.appTitle}
+                </h1>
+                <p className="text-[10px] text-slate-500 hidden md:block">{t.subTitle}</p>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-           <button onClick={handleNewChat} className="flex items-center gap-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-full text-xs font-medium transition-colors">
-              <Plus className="w-4 h-4" /> <span className="hidden sm:inline">{t.newChat}</span>
-           </button>
-        </div>
-      </header>
+          <div className="flex items-center gap-2">
+             <button onClick={handleNewChat} className="flex items-center gap-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-full text-xs font-medium transition-colors">
+                <Plus className="w-4 h-4" /> <span className="hidden sm:inline">{t.newChat}</span>
+             </button>
+          </div>
+        </header>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-hidden relative flex flex-col p-4 md:p-6 gap-4">
-        
-        {/* Mobile Tabs */}
-        <div className="md:hidden flex space-x-1 bg-slate-200 dark:bg-slate-900 p-1 rounded-lg border border-slate-300 dark:border-slate-800">
-          {AI_MODELS_CONFIG.map((config, idx) => (
-            <button
-              key={config.id}
-              onClick={() => setActiveTab(idx)}
-              className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
-                activeTab === idx 
-                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' 
-                  : 'text-slate-500 dark:text-slate-500'
-              }`}
-            >
-              {config.name}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex-1 min-h-0 relative">
-          <div className="h-full grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        {/* Main Content */}
+        <main className="flex-1 overflow-hidden relative flex flex-col p-4 md:p-6 gap-4">
+          
+          {/* Mobile Tabs */}
+          <div className="md:hidden flex space-x-1 bg-slate-200 dark:bg-slate-900 p-1 rounded-lg border border-slate-300 dark:border-slate-800">
             {AI_MODELS_CONFIG.map((config, idx) => (
-              <div key={config.id} className={`h-full ${activeTab === idx ? 'block' : 'hidden md:block'}`}>
-                <ResponseCard 
-                  config={config} 
-                  content={responses[idx]} 
-                  loading={loading[idx]} 
-                  error={errors[idx]}
-                  folders={folders}
-                  onSaveSnippet={handleSaveSnippet}
-                  onPreview={setPreviewContent}
-                  t={t}
-                />
-              </div>
+              <button
+                key={config.id}
+                onClick={() => setActiveTab(idx)}
+                className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
+                  activeTab === idx 
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' 
+                    : 'text-slate-500 dark:text-slate-500'
+                }`}
+              >
+                {config.name}
+              </button>
             ))}
           </div>
 
-          {allFinished && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
-              <button
-                onClick={handleCompare}
-                className="group flex items-center gap-2 bg-yellow-400 text-slate-900 font-bold py-2 px-6 rounded-full shadow-lg hover:bg-yellow-300 transition-all active:scale-95 border border-yellow-500/20"
-              >
-                <Scale className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-                {t.judge}
-              </button>
-            </div>
-          )}
-        </div>
-      </main>
-
-      {/* Input Area */}
-      <footer className="p-4 md:p-6 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 z-20 transition-colors">
-        <div className="max-w-5xl mx-auto space-y-3">
-          
-          <div className="flex justify-between items-end">
-             <SmartToolbar tools={tools} activeToolId={activeToolId} onToggle={setActiveToolId} />
-             <button 
-               onClick={() => setDeepThinking(!deepThinking)} 
-               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors mb-2 ${deepThinking ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 border-purple-200 dark:border-purple-700' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-             >
-               <BrainCircuit className="w-4 h-4" /> {deepThinking ? t.deepThinkingOn : t.deepThinking}
-             </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="relative">
-             {attachedFile && (
-                <div className="absolute -top-10 left-0 bg-slate-200 dark:bg-slate-800 px-3 py-1 rounded-t-lg text-xs flex items-center gap-2 text-slate-700 dark:text-slate-300 border border-b-0 border-slate-300 dark:border-slate-700">
-                  <Paperclip className="w-3 h-3" /> {attachedFile.name}
-                  <button type="button" onClick={() => setAttachedFile(null)} className="hover:text-red-500"><X className="w-3 h-3" /></button>
+          <div className="flex-1 min-h-0 relative">
+            <div className="h-full grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+              {AI_MODELS_CONFIG.map((config, idx) => (
+                <div key={config.id} className={`h-full ${activeTab === idx ? 'block' : 'hidden md:block'}`}>
+                  <ResponseCard 
+                    config={config} 
+                    content={responses[idx]} 
+                    loading={loading[idx]} 
+                    error={errors[idx]}
+                    folders={folders}
+                    onSaveSnippet={handleSaveSnippet}
+                    onPreview={setPreviewContent}
+                    t={t}
+                  />
                 </div>
-             )}
-            
-            <div className="relative">
-              <input
-                type="text"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder={isListening ? t.voiceListening : t.inputPlaceholder}
-                className={`w-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 border rounded-xl pl-12 pr-24 py-4 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm ${attachedFile ? 'rounded-tl-none' : ''} ${isListening ? 'border-red-500 animate-pulse' : 'border-slate-300 dark:border-slate-700'}`}
-              />
-              
-              {/* Left Actions */}
-              <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                 <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*,.txt,.js,.py,.html,.css,.json,.md" />
-                 <button 
-                   type="button" 
-                   onClick={() => fileInputRef.current?.click()}
-                   className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full text-slate-500 dark:text-slate-400 transition-colors"
-                   title="Attach file"
-                 >
-                   <Paperclip className="w-5 h-5" />
-                 </button>
-              </div>
-
-              {/* Right Actions */}
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                 <button 
-                   type="button" 
-                   onClick={toggleVoice}
-                   className={`p-2 rounded-full transition-colors ${isListening ? 'bg-red-100 dark:bg-red-900/30 text-red-500' : 'hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400'}`}
-                   title="Voice Input"
-                 >
-                   <Mic className="w-5 h-5" />
-                 </button>
-                 <button 
-                   type="submit" 
-                   disabled={Object.values(loading).some(l => l) || (!prompt.trim() && !attachedFile)}
-                   className="p-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-purple-900/10"
-                 >
-                   {Object.values(loading).some(l => l) ? (
-                     <Loader2 className="w-5 h-5 animate-spin" />
-                   ) : (
-                     <Send className="w-5 h-5" />
-                   )}
-                 </button>
-              </div>
+              ))}
             </div>
-          </form>
-        </div>
-      </footer>
 
-      {/* Modals */}
-      <ComparisonModal 
-        isOpen={showComparison} 
-        onClose={() => setShowComparison(false)} 
-        comparison={comparisonResult}
-        loading={isComparing}
-        folders={folders}
-        onSaveSnippet={handleSaveSnippet}
-        t={t}
-      />
-      
-      <PreviewModal 
-        isOpen={!!previewContent}
-        onClose={() => setPreviewContent(null)}
-        code={previewContent}
-      />
-    </div>
+            {allFinished && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
+                <button
+                  onClick={handleCompare}
+                  className="group flex items-center gap-2 bg-yellow-400 text-slate-900 font-bold py-2 px-6 rounded-full shadow-lg hover:bg-yellow-300 transition-all active:scale-95 border border-yellow-500/20"
+                >
+                  <Scale className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                  {t.judge}
+                </button>
+              </div>
+            )}
+          </div>
+        </main>
+
+        {/* Input Area */}
+        <footer className="p-4 md:p-6 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 z-20 transition-colors">
+          <div className="max-w-5xl mx-auto space-y-3">
+            
+            <div className="flex justify-between items-end">
+               <SmartToolbar tools={tools} activeToolId={activeToolId} onToggle={setActiveToolId} />
+               <button 
+                 onClick={() => setDeepThinking(!deepThinking)} 
+                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors mb-2 ${deepThinking ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 border-purple-200 dark:border-purple-700' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+               >
+                 <BrainCircuit className="w-4 h-4" /> {deepThinking ? t.deepThinkingOn : t.deepThinking}
+               </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="relative">
+               {attachedFile && (
+                  <div className="absolute -top-10 left-0 bg-slate-200 dark:bg-slate-800 px-3 py-1 rounded-t-lg text-xs flex items-center gap-2 text-slate-700 dark:text-slate-300 border border-b-0 border-slate-300 dark:border-slate-700">
+                    <Paperclip className="w-3 h-3" /> {attachedFile.name}
+                    <button type="button" onClick={() => setAttachedFile(null)} className="hover:text-red-500"><X className="w-3 h-3" /></button>
+                  </div>
+               )}
+              
+              <div className="relative">
+                <input
+                  type="text"
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder={isListening ? t.voiceListening : t.inputPlaceholder}
+                  className={`w-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 border rounded-xl pl-12 pr-24 py-4 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm ${attachedFile ? 'rounded-tl-none' : ''} ${isListening ? 'border-red-500 animate-pulse' : 'border-slate-300 dark:border-slate-700'}`}
+                />
+                
+                {/* Left Actions */}
+                <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                   <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*,.txt,.js,.py,.html,.css,.json,.md" />
+                   <button 
+                     type="button" 
+                     onClick={() => fileInputRef.current?.click()}
+                     className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full text-slate-500 dark:text-slate-400 transition-colors"
+                     title="Attach file"
+                   >
+                     <Paperclip className="w-5 h-5" />
+                   </button>
+                </div>
+
+                {/* Right Actions */}
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                   <button 
+                     type="button" 
+                     onClick={toggleVoice}
+                     className={`p-2 rounded-full transition-colors ${isListening ? 'bg-red-100 dark:bg-red-900/30 text-red-500' : 'hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400'}`}
+                     title="Voice Input"
+                   >
+                     <Mic className="w-5 h-5" />
+                   </button>
+                   <button 
+                     type="submit" 
+                     disabled={Object.values(loading).some(l => l) || (!prompt.trim() && !attachedFile)}
+                     className="p-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-purple-900/10"
+                   >
+                     {Object.values(loading).some(l => l) ? (
+                       <Loader2 className="w-5 h-5 animate-spin" />
+                     ) : (
+                       <Send className="w-5 h-5" />
+                     )}
+                   </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </footer>
+
+        {/* Modals */}
+        <ComparisonModal 
+          isOpen={showComparison} 
+          onClose={() => setShowComparison(false)} 
+          comparison={comparisonResult}
+          loading={isComparing}
+          folders={folders}
+          onSaveSnippet={handleSaveSnippet}
+          t={t}
+        />
+        
+        <PreviewModal 
+          isOpen={!!previewContent}
+          onClose={() => setPreviewContent(null)}
+          code={previewContent}
+        />
+      </div>
+    </ErrorBoundary>
   );
 };
 
