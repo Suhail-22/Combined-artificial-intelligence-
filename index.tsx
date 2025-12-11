@@ -141,7 +141,7 @@ const TRANSLATIONS = {
       "Write unit tests"
     ],
     apiKeyMissing: "API Key Missing",
-    apiKeyMissingDesc: "Check deployment settings."
+    apiKeyMissingDesc: "Set VITE_API_KEY or NEXT_PUBLIC_API_KEY in Vercel."
   },
   ar: {
     appTitle: "المبرمج الثلاثي",
@@ -197,7 +197,7 @@ const TRANSLATIONS = {
       "اكتب اختبارات للكود"
     ],
     apiKeyMissing: "مفتاح الربط مفقود",
-    apiKeyMissingDesc: "تحقق من إعدادات النشر."
+    apiKeyMissingDesc: "أضف VITE_API_KEY أو NEXT_PUBLIC_API_KEY في Vercel."
   }
 };
 
@@ -243,10 +243,7 @@ interface ErrorBoundaryState {
 }
 
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
+  state: ErrorBoundaryState = { hasError: false, error: null };
 
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
@@ -660,28 +657,26 @@ const App = () => {
     try {
       let key = '';
       
-      // 1. Try process.env (Node/Webpack/standard)
-      try {
-         if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-            key = process.env.API_KEY;
-         }
-      } catch(e) {}
-      
-      // 2. Try import.meta.env (Vite/ESM) - often used in Vercel deployments
-      if (!key) {
-        try {
-          // @ts-ignore
-          if (typeof import.meta !== 'undefined' && import.meta.env) {
-             // @ts-ignore
-             key = import.meta.env.API_KEY || import.meta.env.VITE_API_KEY || '';
-          }
-        } catch (e) {}
+      // Helper to check object existence safely
+      const getEnv = (obj: any, name: string) => obj && obj[name] ? obj[name] : '';
+
+      // 1. Try process.env (Node/Webpack/standard/Next.js)
+      if (typeof process !== 'undefined' && process.env) {
+         key = getEnv(process.env, 'API_KEY') || 
+               getEnv(process.env, 'NEXT_PUBLIC_API_KEY') || 
+               getEnv(process.env, 'REACT_APP_API_KEY');
+      }
+
+      // 2. Try import.meta.env (Vite/ESM)
+      if (!key && typeof import.meta !== 'undefined' && (import.meta as any).env) {
+         key = getEnv((import.meta as any).env, 'API_KEY') || 
+               getEnv((import.meta as any).env, 'VITE_API_KEY');
       }
 
       if (key) {
          return new GoogleGenAI({ apiKey: key });
       } else {
-         console.warn("API Key not found in process.env or import.meta.env");
+         console.warn("API Key not found. Please check process.env or import.meta.env config.");
          return null; 
       }
     } catch (e) {
@@ -843,8 +838,8 @@ const App = () => {
     
     if (!ai) {
       alert(lang === 'ar' 
-        ? "عفواً، مفتاح الربط (API Key) مفقود في إعدادات النشر. يرجى التحقق من متغيرات البيئة في Vercel." 
-        : "System Error: API Key is missing. Please check your Vercel deployment environment variables.");
+        ? "عفواً، مفتاح الربط مفقود. لإصلاح ذلك في Vercel، أضف متغير بيئة باسم 'NEXT_PUBLIC_API_KEY' أو 'VITE_API_KEY' يحتوي على مفتاحك." 
+        : "API Key missing. To fix on Vercel, add an Environment Variable named 'NEXT_PUBLIC_API_KEY' or 'VITE_API_KEY'.");
       return;
     }
 
@@ -1074,7 +1069,7 @@ const App = () => {
            
            <div className="flex items-center gap-2">
               {!ai && (
-                 <div className="flex items-center gap-1.5 px-3 py-1 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-full text-red-600 dark:text-red-400 text-xs font-bold animate-pulse">
+                 <div className="flex items-center gap-1.5 px-3 py-1 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-full text-red-600 dark:text-red-400 text-xs font-bold">
                     <WifiOff className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">{t.apiKeyMissing}</span>
                  </div>
