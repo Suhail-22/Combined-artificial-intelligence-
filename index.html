@@ -14,6 +14,9 @@
   <link rel="apple-touch-icon" href="https://placehold.co/192x192/7e22ce/ffffff.png?text=AI">
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Babel Standalone for in-browser TSX compilation (Fixes GitHub Pages White Screen) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
   <script type="importmap">
   {
     "imports": {
@@ -42,7 +45,11 @@
 </head>
 <body>
   <div id="root"></div>
-  <!-- Service Worker removed to prevent white screen issues in dev environments -->
-  <script type="module" src="index.tsx"></script>
+  
+  <!-- 
+    NOTE: type="text/babel" allows running TSX directly in browser without a build step.
+    data-presets="react,typescript" tells Babel how to handle the code.
+  -->
+  <script type="text/babel" data-type="module" data-presets="react,typescript" src="./index.tsx"></script>
 </body>
 </html>

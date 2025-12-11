@@ -8,7 +8,7 @@ import {
   Menu, Bug, FileCode, BookOpen, TestTube, Eraser, Archive, ExternalLink,
   Mic, Paperclip, Plus, History, Settings, Moon, Sun, Monitor, Languages, Eye, AlertTriangle,
   User, Bot, Clock, ChevronDown, ChevronUp, Share2, Lightbulb, MessageCircle, Upload, Users, Star,
-  WifiOff
+  WifiOff, Key
 } from 'lucide-react';
 
 // --- Types ---
@@ -141,7 +141,7 @@ const TRANSLATIONS = {
       "Write unit tests"
     ],
     apiKeyMissing: "API Key Missing",
-    apiKeyMissingDesc: "Set VITE_API_KEY or NEXT_PUBLIC_API_KEY in Vercel."
+    apiKeyMissingDesc: "To use the app, add an Environment Variable in your Vercel Project Settings named 'NEXT_PUBLIC_API_KEY' or 'VITE_API_KEY' with your Google Gemini Key."
   },
   ar: {
     appTitle: "المبرمج الثلاثي",
@@ -197,7 +197,7 @@ const TRANSLATIONS = {
       "اكتب اختبارات للكود"
     ],
     apiKeyMissing: "مفتاح الربط مفقود",
-    apiKeyMissingDesc: "أضف VITE_API_KEY أو NEXT_PUBLIC_API_KEY في Vercel."
+    apiKeyMissingDesc: "لتفعيل التطبيق، اذهب لإعدادات المشروع في Vercel وأضف متغير بيئة (Environment Variable) باسم 'NEXT_PUBLIC_API_KEY' أو 'VITE_API_KEY' وضع فيه مفتاح Google Gemini."
   }
 };
 
@@ -660,17 +660,19 @@ const App = () => {
       // Helper to check object existence safely
       const getEnv = (obj: any, name: string) => obj && obj[name] ? obj[name] : '';
 
-      // 1. Try process.env (Node/Webpack/standard/Next.js)
+      // 1. Try process.env (Node/Webpack/standard/Next.js/CRA)
       if (typeof process !== 'undefined' && process.env) {
          key = getEnv(process.env, 'API_KEY') || 
                getEnv(process.env, 'NEXT_PUBLIC_API_KEY') || 
-               getEnv(process.env, 'REACT_APP_API_KEY');
+               getEnv(process.env, 'REACT_APP_API_KEY') ||
+               getEnv(process.env, 'VITE_API_KEY');
       }
 
       // 2. Try import.meta.env (Vite/ESM)
       if (!key && typeof import.meta !== 'undefined' && (import.meta as any).env) {
          key = getEnv((import.meta as any).env, 'API_KEY') || 
-               getEnv((import.meta as any).env, 'VITE_API_KEY');
+               getEnv((import.meta as any).env, 'VITE_API_KEY') ||
+               getEnv((import.meta as any).env, 'NEXT_PUBLIC_API_KEY');
       }
 
       if (key) {
@@ -837,9 +839,7 @@ const App = () => {
     if (!text.trim() && !file) return;
     
     if (!ai) {
-      alert(lang === 'ar' 
-        ? "عفواً، مفتاح الربط مفقود. لإصلاح ذلك في Vercel، أضف متغير بيئة باسم 'NEXT_PUBLIC_API_KEY' أو 'VITE_API_KEY' يحتوي على مفتاحك." 
-        : "API Key missing. To fix on Vercel, add an Environment Variable named 'NEXT_PUBLIC_API_KEY' or 'VITE_API_KEY'.");
+      // Alert handled by UI now, but safety check remains
       return;
     }
 
@@ -1069,7 +1069,7 @@ const App = () => {
            
            <div className="flex items-center gap-2">
               {!ai && (
-                 <div className="flex items-center gap-1.5 px-3 py-1 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-full text-red-600 dark:text-red-400 text-xs font-bold">
+                 <div className="flex items-center gap-1.5 px-3 py-1 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-full text-red-600 dark:text-red-400 text-xs font-bold animate-pulse">
                     <WifiOff className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">{t.apiKeyMissing}</span>
                  </div>
@@ -1168,7 +1168,13 @@ const App = () => {
                  <BrainCircuit className="w-24 h-24 mb-4" />
                  <p className="text-xl font-bold">{t.appTitle}</p>
                  <p className="text-sm">{t.subTitle}</p>
-                 {!ai && <p className="text-xs text-red-400 mt-2 font-bold bg-red-900/20 px-3 py-1 rounded-full">{t.apiKeyMissingDesc}</p>}
+                 {!ai && (
+                   <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl max-w-sm text-center">
+                     <div className="flex justify-center mb-2"><Key className="w-6 h-6 text-red-400" /></div>
+                     <p className="text-xs text-red-400 font-bold mb-1">{t.apiKeyMissing}</p>
+                     <p className="text-[10px] text-red-300/80 leading-relaxed">{t.apiKeyMissingDesc}</p>
+                   </div>
+                 )}
               </div>
            ) : (
              messages.map(msg => (
