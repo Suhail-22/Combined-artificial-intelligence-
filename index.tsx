@@ -11,6 +11,8 @@ import {
   WifiOff, Key
 } from 'lucide-react';
 
+console.log("Index.tsx started executing...");
+
 // --- Types ---
 
 interface Snippet {
@@ -231,7 +233,7 @@ const AI_MODELS_CONFIG = [
   }
 ];
 
-// --- Error Boundary ---
+// --- Error Boundary (Simplified for Browser Babel) ---
 
 interface ErrorBoundaryProps {
   children?: React.ReactNode;
@@ -244,8 +246,15 @@ interface ErrorBoundaryState {
 
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = { hasError: false, error: null };
+  props: ErrorBoundaryProps;
 
-  static getDerivedStateFromError(error: Error) {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.props = props;
+  }
+
+  static getDerivedStateFromError(error: any): ErrorBoundaryState {
+    console.error("ErrorBoundary Caught:", error);
     return { hasError: true, error };
   }
 
@@ -255,7 +264,10 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         <div className="flex flex-col items-center justify-center h-screen bg-slate-900 text-white p-6 text-center">
           <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />
           <h1 className="text-2xl font-bold mb-2">Something went wrong</h1>
-          <p className="text-slate-400 mb-4 max-w-md">Please restart the application.</p>
+          <p className="text-slate-400 mb-4 max-w-md">The application encountered a critical error.</p>
+          <pre className="text-xs text-red-400 max-w-xs overflow-auto bg-black p-2 rounded mb-4 text-left">
+            {this.state.error?.message}
+          </pre>
           <button onClick={() => window.location.reload()} className="mt-4 px-6 py-2 bg-purple-600 rounded-full font-bold">Reload</button>
         </div>
       );
@@ -652,33 +664,37 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang, folder
 // --- Main App ---
 
 const App = () => {
-  // Safe initialization of AI
+  // Safe initialization of AI - التحديث الجديد
   const ai = useMemo(() => {
     try {
       let key = '';
       
-      // Helper to check object existence safely
-      const getEnv = (obj: any, name: string) => obj && obj[name] ? obj[name] : '';
-
-      // 1. Try process.env (Node/Webpack/standard/Next.js/CRA)
-      if (typeof process !== 'undefined' && process.env) {
-         key = getEnv(process.env, 'API_KEY') || 
-               getEnv(process.env, 'NEXT_PUBLIC_API_KEY') || 
-               getEnv(process.env, 'REACT_APP_API_KEY') ||
-               getEnv(process.env, 'VITE_API_KEY');
+      // محاولة قراءة من متغيرات Vite أولاً
+      if (typeof import.meta !== 'undefined' && import.meta.env) {
+        const env = import.meta.env as any;
+        key = env.VITE_GEMINI_API_KEY || 
+              env.GEMINI_API_KEY || 
+              env.VITE_API_KEY || 
+              env.API_KEY;
+      }
+      
+      // ثم من process.env (للتوافق)
+      if (!key && typeof process !== 'undefined' && process.env) {
+        key = process.env.GEMINI_API_KEY || 
+              process.env.API_KEY;
+      }
+      
+      // أخيراً من window.process (polyfill)
+      if (!key && window.process && window.process.env) {
+        key = window.process.env.GEMINI_API_KEY || 
+              window.process.env.API_KEY;
       }
 
-      // 2. Try import.meta.env (Vite/ESM)
-      if (!key && typeof import.meta !== 'undefined' && (import.meta as any).env) {
-         key = getEnv((import.meta as any).env, 'API_KEY') || 
-               getEnv((import.meta as any).env, 'VITE_API_KEY') ||
-               getEnv((import.meta as any).env, 'NEXT_PUBLIC_API_KEY');
-      }
-
-      if (key) {
+      if (key && key.trim() !== '') {
+         console.log("AI Init Success - Key found");
          return new GoogleGenAI({ apiKey: key });
       } else {
-         console.warn("API Key not found. Please check process.env or import.meta.env config.");
+         console.warn("API Key not found. App will run in limited mode.");
          return null; 
       }
     } catch (e) {
@@ -713,6 +729,13 @@ const App = () => {
   const scrollEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
+
+  // Remove Splash Screen on Mount
+  useEffect(() => {
+    console.log("App Mounted");
+    const splash = document.getElementById('loading-splash');
+    if(splash) splash.style.display = 'none';
+  }, []);
 
   // Tools
   const tools: Tool[] = useMemo(() => [
@@ -1161,101 +1184,6 @@ const App = () => {
           </div>
         )}
 
-        {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
-           {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full opacity-30 pointer-events-none">
-                 <BrainCircuit className="w-24 h-24 mb-4" />
-                 <p className="text-xl font-bold">{t.appTitle}</p>
-                 <p className="text-sm">{t.subTitle}</p>
-                 {!ai && (
-                   <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl max-w-sm text-center">
-                     <div className="flex justify-center mb-2"><Key className="w-6 h-6 text-red-400" /></div>
-                     <p className="text-xs text-red-400 font-bold mb-1">{t.apiKeyMissing}</p>
-                     <p className="text-[10px] text-red-300/80 leading-relaxed">{t.apiKeyMissingDesc}</p>
-                   </div>
-                 )}
-              </div>
-           ) : (
-             messages.map(msg => (
-               <ChatMessageBubble 
-                  key={msg.id} 
-                  msg={msg} 
-                  lang={lang} 
-                  folders={folders} 
-                  onSaveSnippet={handleSaveSnippet} 
-                  onPreview={setPreviewContent}
-                  onCompare={handleCompare}
-                  onConsensus={handleConsensus}
-                  onSuggestionClick={(txt) => executeSubmit(txt, null)}
-                  t={t} 
-               />
-             ))
-           )}
-           <div ref={scrollEndRef} className="h-4" />
-        </div>
-
-        {/* Input Area */}
-        <div className="shrink-0 p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 z-20">
-           <div className="max-w-4xl mx-auto">
-              
-              {/* Toolbar */}
-              <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
-                 {tools.map(tool => (
-                    <button 
-                      key={tool.id} 
-                      onClick={() => setActiveToolId(activeToolId === tool.id ? null : tool.id)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap border transition-all ${activeToolId === tool.id ? 'bg-purple-100 border-purple-300 text-purple-700 dark:bg-purple-900/40 dark:border-purple-600 dark:text-purple-300' : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
-                    >
-                       {tool.icon} {tool.label}
-                    </button>
-                 ))}
-                 <button 
-                    onClick={() => setDeepThinking(!deepThinking)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap border transition-all ${deepThinking ? 'bg-indigo-100 border-indigo-300 text-indigo-700 dark:bg-indigo-900/40 dark:border-indigo-600 dark:text-indigo-300' : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
-                 >
-                    <BrainCircuit className="w-3.5 h-3.5" /> {deepThinking ? t.deepThinkingOn : t.deepThinking}
-                 </button>
-              </div>
-
-              {/* Input Box */}
-              <form onSubmit={handleSubmit} className="relative group">
-                 {attachedFile && (
-                    <div className="absolute -top-10 left-0 flex items-center gap-2 bg-slate-200 dark:bg-slate-800 px-3 py-1.5 rounded-t-lg text-xs text-slate-700 dark:text-slate-300 border border-b-0 border-slate-300 dark:border-slate-700">
-                       <Paperclip className="w-3 h-3" /> <span className="max-w-[150px] truncate">{attachedFile.name}</span>
-                       <button type="button" onClick={() => setAttachedFile(null)}><X className="w-3 h-3 hover:text-red-500" /></button>
-                    </div>
-                 )}
-                 
-                 <div className="relative">
-                    <input 
-                      type="text" 
-                      value={prompt}
-                      onChange={e => setPrompt(e.target.value)}
-                      placeholder={isListening ? t.voiceListening : t.inputPlaceholder}
-                      className={`w-full bg-slate-100 dark:bg-slate-900 border text-slate-900 dark:text-slate-100 rounded-2xl pl-12 pr-14 py-4 md:py-3.5 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all ${attachedFile ? 'rounded-tl-none' : ''} ${isListening ? 'border-red-500 animate-pulse' : 'border-slate-200 dark:border-slate-800'}`}
-                    />
-                    
-                    <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center">
-                       <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileSelect} />
-                       <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
-                          <Paperclip className="w-5 h-5" />
-                       </button>
-                    </div>
-
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                       <button type="button" onClick={() => setIsListening(!isListening)} className={`p-2 rounded-full transition-colors ${isListening ? 'bg-red-50 text-red-500' : 'text-slate-400 hover:text-slate-600'}`}>
-                          <Mic className="w-5 h-5" />
-                       </button>
-                       <button disabled={!prompt.trim() && !attachedFile} type="submit" className="p-2 bg-purple-600 text-white rounded-xl hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-600/20 transition-all active:scale-95">
-                          <Send className="w-4 h-4" />
-                       </button>
-                    </div>
-                 </div>
-              </form>
-           </div>
-        </div>
-
         {/* Preview Modal */}
         <PreviewModal isOpen={!!previewContent} onClose={() => setPreviewContent(null)} code={previewContent} />
 
@@ -1265,4 +1193,9 @@ const App = () => {
 };
 
 const root = createRoot(document.getElementById('root')!);
-root.render(<App />);
+try {
+  root.render(<App />);
+} catch (e) {
+  console.error("Critical Render Error", e);
+  document.body.innerHTML = '<div style="color:red;padding:20px;background:black;">CRITICAL RENDER ERROR: ' + e + '</div>';
+}
