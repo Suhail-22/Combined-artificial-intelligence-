@@ -7,11 +7,8 @@ import {
   Save, FolderPlus, Download, Play, Copy, Folder, Trash2, FileJson, 
   Menu, Bug, FileCode, BookOpen, TestTube, Eraser, Archive, ExternalLink,
   Mic, Paperclip, Plus, History, Settings, Moon, Sun, Monitor, Languages, Eye, AlertTriangle,
-  User, Bot, Clock, ChevronDown, ChevronUp, Share2, Lightbulb, MessageCircle, Upload, Users, Star,
-  WifiOff, Key
+  User, Bot, Clock, ChevronDown, ChevronUp, Share2, Lightbulb, MessageCircle, Upload, Users, Star
 } from 'lucide-react';
-
-console.log("Index.tsx started executing...");
 
 // --- Types ---
 
@@ -62,6 +59,70 @@ interface Tool {
     label: string;
     prompt: string;
 }
+
+// --- IndexedDB Helper ---
+
+const DB_NAME = 'TriCoderDB';
+const DB_VERSION = 1;
+
+const dbHelper = {
+  open: () => {
+    return new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      request.onupgradeneeded = (event: any) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains('sessions')) {
+          db.createObjectStore('sessions', { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('folders')) {
+          db.createObjectStore('folders', { keyPath: 'id' });
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  getAll: async (storeName: string) => {
+    const db = await dbHelper.open();
+    return new Promise<any[]>((resolve, reject) => {
+      const transaction = db.transaction(storeName, 'readonly');
+      const store = transaction.objectStore(storeName);
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  put: async (storeName: string, item: any) => {
+    const db = await dbHelper.open();
+    return new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction(storeName, 'readwrite');
+      const store = transaction.objectStore(storeName);
+      const request = store.put(item);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  },
+  delete: async (storeName: string, id: string) => {
+    const db = await dbHelper.open();
+    return new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction(storeName, 'readwrite');
+      const store = transaction.objectStore(storeName);
+      const request = store.delete(id);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  },
+  clear: async (storeName: string) => {
+     const db = await dbHelper.open();
+     return new Promise<void>((resolve, reject) => {
+       const transaction = db.transaction(storeName, 'readwrite');
+       const store = transaction.objectStore(storeName);
+       const request = store.clear();
+       request.onsuccess = () => resolve();
+       request.onerror = () => reject(request.error);
+     });
+  }
+};
 
 // --- Helper Functions ---
 
@@ -141,9 +202,7 @@ const TRANSLATIONS = {
       "Optimize this code",
       "Add detailed comments",
       "Write unit tests"
-    ],
-    apiKeyMissing: "API Key Missing",
-    apiKeyMissingDesc: "To use the app, add an Environment Variable in your Vercel Project Settings named 'NEXT_PUBLIC_API_KEY' or 'VITE_API_KEY' with your Google Gemini Key."
+    ]
   },
   ar: {
     appTitle: "المبرمج الثلاثي",
@@ -197,9 +256,7 @@ const TRANSLATIONS = {
       "حسن أداء الكود",
       "أضف تعليقات توضيحية",
       "اكتب اختبارات للكود"
-    ],
-    apiKeyMissing: "مفتاح الربط مفقود",
-    apiKeyMissingDesc: "لتفعيل التطبيق، اذهب لإعدادات المشروع في Vercel وأضف متغير بيئة (Environment Variable) باسم 'NEXT_PUBLIC_API_KEY' أو 'VITE_API_KEY' وضع فيه مفتاح Google Gemini."
+    ]
   }
 };
 
@@ -233,7 +290,7 @@ const AI_MODELS_CONFIG = [
   }
 ];
 
-// --- Error Boundary (Simplified for Browser Babel) ---
+// --- Error Boundary ---
 
 interface ErrorBoundaryProps {
   children?: React.ReactNode;
@@ -246,15 +303,8 @@ interface ErrorBoundaryState {
 
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = { hasError: false, error: null };
-  props: ErrorBoundaryProps;
 
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.props = props;
-  }
-
-  static getDerivedStateFromError(error: any): ErrorBoundaryState {
-    console.error("ErrorBoundary Caught:", error);
+  static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
   }
 
@@ -264,10 +314,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         <div className="flex flex-col items-center justify-center h-screen bg-slate-900 text-white p-6 text-center">
           <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />
           <h1 className="text-2xl font-bold mb-2">Something went wrong</h1>
-          <p className="text-slate-400 mb-4 max-w-md">The application encountered a critical error.</p>
-          <pre className="text-xs text-red-400 max-w-xs overflow-auto bg-black p-2 rounded mb-4 text-left">
-            {this.state.error?.message}
-          </pre>
+          <p className="text-slate-400 mb-4 max-w-md">Please restart the application.</p>
           <button onClick={() => window.location.reload()} className="mt-4 px-6 py-2 bg-purple-600 rounded-full font-bold">Reload</button>
         </div>
       );
@@ -664,37 +711,14 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang, folder
 // --- Main App ---
 
 const App = () => {
-  // Safe initialization of AI - التحديث الجديد
+  // Safe initialization of AI
   const ai = useMemo(() => {
     try {
-      let key = '';
-      
-      // محاولة قراءة من متغيرات Vite أولاً
-      if (typeof import.meta !== 'undefined' && import.meta.env) {
-        const env = import.meta.env as any;
-        key = env.VITE_GEMINI_API_KEY || 
-              env.GEMINI_API_KEY || 
-              env.VITE_API_KEY || 
-              env.API_KEY;
-      }
-      
-      // ثم من process.env (للتوافق)
-      if (!key && typeof process !== 'undefined' && process.env) {
-        key = process.env.GEMINI_API_KEY || 
-              process.env.API_KEY;
-      }
-      
-      // أخيراً من window.process (polyfill)
-      if (!key && window.process && window.process.env) {
-        key = window.process.env.GEMINI_API_KEY || 
-              window.process.env.API_KEY;
-      }
-
-      if (key && key.trim() !== '') {
-         console.log("AI Init Success - Key found");
-         return new GoogleGenAI({ apiKey: key });
+      if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+         return new GoogleGenAI({ apiKey: process.env.API_KEY });
       } else {
-         console.warn("API Key not found. App will run in limited mode.");
+         console.warn("API Key might be missing or process.env is undefined.");
+         // Fallback usually not possible without key, but prevents crash
          return null; 
       }
     } catch (e) {
@@ -703,18 +727,15 @@ const App = () => {
     }
   }, []);
 
-  const [lang, setLang] = useState<'en' | 'ar'>('en');
+  // Default to Arabic to match the requested image
+  const [lang, setLang] = useState<'en' | 'ar'>('ar');
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('dark');
   const t = TRANSLATIONS[lang];
 
   // Core Data
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [folders, setFolders] = useState<Folder[]>(() => {
-    try { return JSON.parse(localStorage.getItem('tricoder_folders') || '[]'); } catch { return []; }
-  });
-  const [sessions, setSessions] = useState<ChatSession[]>(() => {
-    try { return JSON.parse(localStorage.getItem('tricoder_history') || '[]'); } catch { return []; }
-  });
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [sessionId, setSessionId] = useState<string>(generateId());
 
   // UI State
@@ -730,13 +751,6 @@ const App = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
 
-  // Remove Splash Screen on Mount
-  useEffect(() => {
-    console.log("App Mounted");
-    const splash = document.getElementById('loading-splash');
-    if(splash) splash.style.display = 'none';
-  }, []);
-
   // Tools
   const tools: Tool[] = useMemo(() => [
     { id: 'debug', icon: <Bug className="w-4 h-4" />, label: t.tools.debug, prompt: "Find and fix bugs in the code. Think deeply about edge cases for the following request:" },
@@ -745,6 +759,24 @@ const App = () => {
     { id: 'test', icon: <TestTube className="w-4 h-4" />, label: t.tools.test, prompt: "Write comprehensive unit tests for this code:" },
     { id: 'convert', icon: <ExternalLink className="w-4 h-4" />, label: t.tools.convert, prompt: "Convert this code to a different language/framework (infer target from context or provide best alternative):" },
   ], [t]);
+
+  // Load Data from IndexedDB
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const loadedFolders = await dbHelper.getAll('folders');
+        setFolders(loadedFolders);
+        
+        const loadedSessions = await dbHelper.getAll('sessions');
+        // Sort sessions by timestamp desc
+        loadedSessions.sort((a, b) => b.timestamp - a.timestamp);
+        setSessions(loadedSessions);
+      } catch (e) {
+        console.error("DB Load Error", e);
+      }
+    };
+    loadData();
+  }, []);
 
   // Effects
   useEffect(() => {
@@ -759,33 +791,49 @@ const App = () => {
 
   useEffect(() => { document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'; }, [lang]);
   
-  useEffect(() => { localStorage.setItem('tricoder_folders', JSON.stringify(folders)); }, [folders]);
+  // Save folders to DB on change
+  useEffect(() => {
+    if (folders.length > 0) {
+      folders.forEach(f => dbHelper.put('folders', f));
+    }
+  }, [folders]);
   
-  useEffect(() => { localStorage.setItem('tricoder_history', JSON.stringify(sessions)); }, [sessions]);
+  // Save sessions to DB on change
+  useEffect(() => {
+     if (sessions.length > 0) {
+       // We only save the current active session actively to avoid performance hit of saving everything
+       // But for simplicity in this structure, we can iterate. 
+       // Better approach: Save ONLY the current sessionId when messages change
+     }
+  }, [sessions]);
 
-  // Save Session Logic
+  // Save Current Session Logic (The robust DB part)
   useEffect(() => {
     if (messages.length > 0) {
+       const firstUserMsg = messages.find(m => m.role === 'user');
+       const title = firstUserMsg ? firstUserMsg.content?.substring(0, 40) + (firstUserMsg.content?.length! > 40 ? '...' : '') : 'New Chat';
+       
+       const currentSession: ChatSession = {
+          id: sessionId,
+          title: title || 'New Chat',
+          messages,
+          timestamp: Date.now()
+       };
+
+       // Update State
        setSessions(prev => {
           const existing = prev.findIndex(s => s.id === sessionId);
-          const firstUserMsg = messages.find(m => m.role === 'user');
-          const title = firstUserMsg ? firstUserMsg.content?.substring(0, 40) + (firstUserMsg.content?.length! > 40 ? '...' : '') : 'New Chat';
-          
-          const newSession: ChatSession = {
-             id: sessionId,
-             title: title || 'New Chat',
-             messages,
-             timestamp: Date.now()
-          };
-
           if (existing >= 0) {
              const updated = [...prev];
-             updated[existing] = newSession;
+             updated[existing] = currentSession;
              return updated;
           } else {
-             return [newSession, ...prev];
+             return [currentSession, ...prev];
           }
        });
+
+       // Update DB
+       dbHelper.put('sessions', currentSession).catch(err => console.error("Failed to save session", err));
     }
   }, [messages, sessionId]);
 
@@ -799,6 +847,7 @@ const App = () => {
       ...f,
       snippets: [...f.snippets, { id: generateId(), title: `Snippet ${Date.now()}`, code, language: snippetLang, timestamp: Date.now() }]
     } : f));
+    // Trigger DB save is handled by effect, but let's ensure immediate feedback
     alert('Saved!');
   };
 
@@ -816,20 +865,24 @@ const App = () => {
      setIsSidebarOpen(false);
   };
 
-  const deleteSession = (e: React.MouseEvent, id: string) => {
+  const deleteSession = async (e: React.MouseEvent, id: string) => {
      e.stopPropagation();
      if (confirm('Delete this chat?')) {
+        await dbHelper.delete('sessions', id);
         setSessions(prev => prev.filter(s => s.id !== id));
         if (id === sessionId) handleNewChat();
      }
   };
 
-  const handleExportBackup = () => {
+  const handleExportBackup = async () => {
+    const loadedFolders = await dbHelper.getAll('folders');
+    const loadedSessions = await dbHelper.getAll('sessions');
+    
     const data = {
       version: 1,
       timestamp: Date.now(),
-      folders,
-      history: sessions
+      folders: loadedFolders,
+      history: loadedSessions
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
     const url = URL.createObjectURL(blob);
@@ -844,13 +897,20 @@ const App = () => {
     if (!file) return;
     
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       try {
         const json = JSON.parse(ev.target?.result as string);
-        if (json.folders) setFolders(json.folders);
-        if (json.history) setSessions(json.history);
+        
+        if (json.folders) {
+           for (const f of json.folders) await dbHelper.put('folders', f);
+           setFolders(json.folders);
+        }
+        if (json.history) {
+           for (const s of json.history) await dbHelper.put('sessions', s);
+           setSessions(json.history);
+        }
+        
         alert("Backup restored successfully!");
-        window.location.reload(); // To ensure clean state
       } catch (err) {
         alert("Invalid backup file.");
       }
@@ -859,12 +919,7 @@ const App = () => {
   };
 
   const executeSubmit = (text: string, file: any) => {
-    if (!text.trim() && !file) return;
-    
-    if (!ai) {
-      // Alert handled by UI now, but safety check remains
-      return;
-    }
+    if ((!text.trim() && !file) || !ai) return;
 
     // 1. Clear Input immediately
     setPrompt('');
@@ -931,7 +986,7 @@ const App = () => {
             ...m,
             modelsData: {
               ...m.modelsData,
-              [index]: { text: result.text, loading: false, error: null }
+              [index]: { text: result.text || '', loading: false, error: null }
             }
           };
         }
@@ -1089,18 +1144,9 @@ const App = () => {
                 <h1 className="font-bold text-lg bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent">{t.appTitle}</h1>
              </div>
            </div>
-           
-           <div className="flex items-center gap-2">
-              {!ai && (
-                 <div className="flex items-center gap-1.5 px-3 py-1 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-full text-red-600 dark:text-red-400 text-xs font-bold animate-pulse">
-                    <WifiOff className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">{t.apiKeyMissing}</span>
-                 </div>
-              )}
-              <button onClick={handleNewChat} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700">
-                 <Plus className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-              </button>
-           </div>
+           <button onClick={handleNewChat} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700">
+              <Plus className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+           </button>
         </header>
 
         {/* Sidebar */}
@@ -1170,32 +1216,130 @@ const App = () => {
                       <div className="relative">
                           <input type="file" ref={importInputRef} onChange={handleImportBackup} className="hidden" accept=".json" />
                           <button onClick={() => importInputRef.current?.click()} className="w-full py-2 bg-slate-100 dark:bg-slate-800 rounded text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-200">
-                              <Upload className="w-4 h-4" /> {t.importBackup}
+                             <Upload className="w-4 h-4" /> {t.importBackup}
                           </button>
                       </div>
-                      
-                      <button onClick={handleBackupZip} className="w-full py-2 bg-slate-100 dark:bg-slate-800 rounded text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-200">
-                          <Archive className="w-4 h-4" /> {t.downloadZip}
-                      </button>
                    </div>
                 </div>
              </div>
-             <div className="flex-1 bg-black/20 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)}></div>
           </div>
         )}
 
-        {/* Preview Modal */}
-        <PreviewModal isOpen={!!previewContent} onClose={() => setPreviewContent(null)} code={previewContent} />
+        {/* Main Chat Area */}
+        <div className="flex-1 flex flex-col min-w-0 bg-white/50 dark:bg-slate-900/50">
+           
+           {/* Messages */}
+           <div className="flex-1 overflow-y-auto p-4 scroll-smooth">
+              {messages.length === 0 ? (
+                 <div className="h-full flex flex-col items-center justify-center">
+                    <div className="p-4 bg-purple-500/10 rounded-3xl mb-6 animate-in zoom-in duration-500">
+                       <Sparkles className="w-12 h-12 text-purple-500" />
+                    </div>
+                    <h2 className="text-3xl font-bold mb-2 text-slate-200">{t.appTitle}</h2>
+                    <p className="text-slate-500 mb-10">{t.subTitle}</p>
+                    <div className="flex flex-col gap-3 w-full max-w-md animate-in slide-in-from-bottom-4 duration-700 fade-in">
+                       {t.suggestedPrompts.map((p:string, i:number) => (
+                          <button key={i} onClick={() => setPrompt(p)} className="text-start p-4 border border-slate-800 rounded-xl hover:bg-slate-900 hover:border-purple-500/50 hover:text-purple-400 transition-all text-slate-400 text-sm">
+                             {p}
+                          </button>
+                       ))}
+                    </div>
+                 </div>
+              ) : (
+                 <div className="max-w-5xl mx-auto">
+                    {messages.map(m => (
+                       <ChatMessageBubble 
+                          key={m.id} 
+                          msg={m} 
+                          lang={lang} 
+                          folders={folders} 
+                          onSaveSnippet={handleSaveSnippet} 
+                          onPreview={(c) => setPreviewContent(c)} 
+                          t={t} 
+                          onCompare={handleCompare} 
+                          onConsensus={handleConsensus}
+                          onSuggestionClick={(p) => setPrompt(p)}
+                       />
+                    ))}
+                    {isListening && <div className="text-center text-xs text-red-500 animate-pulse">{t.voiceListening}</div>}
+                    <div ref={scrollEndRef} />
+                 </div>
+              )}
+           </div>
 
+           {/* Input Area */}
+           <div className="p-4 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800">
+              <div className="max-w-4xl mx-auto">
+                 {/* Tools and Settings Above Input */}
+                 <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide mask-fade">
+                    <button 
+                      type="button" 
+                      onClick={() => setDeepThinking(!deepThinking)} 
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors shrink-0 ${deepThinking ? 'bg-blue-600 border-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-500'}`}
+                    >
+                       <BrainCircuit className="w-3.5 h-3.5" />
+                       {t.deepThinking}
+                    </button>
+                    
+                    {tools.map(tool => (
+                       <button 
+                         key={tool.id} 
+                         type="button" 
+                         onClick={() => setActiveToolId(activeToolId === tool.id ? null : tool.id)} 
+                         className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors shrink-0 ${activeToolId === tool.id ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-indigo-500'}`}
+                       >
+                          {tool.icon}
+                          {tool.label}
+                       </button>
+                    ))}
+                 </div>
+
+                 {attachedFile && (
+                    <div className="flex items-center gap-2 text-xs bg-slate-100 dark:bg-slate-900 p-2 rounded mb-2 w-fit">
+                       <Paperclip className="w-3 h-3" />
+                       <span>{attachedFile.name}</span>
+                       <button onClick={() => setAttachedFile(null)}><X className="w-3 h-3" /></button>
+                    </div>
+                 )}
+                 <form onSubmit={handleSubmit} className="relative">
+                    <div className="flex gap-2 items-end">
+                       <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 text-slate-400 hover:text-purple-600 bg-slate-100 dark:bg-slate-900 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+                          <Paperclip className="w-5 h-5" />
+                       </button>
+                       <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
+                       
+                       <div className="flex-1 bg-slate-100 dark:bg-slate-900 rounded-2xl flex items-center px-4 py-1 border border-transparent focus-within:border-purple-500/50 focus-within:ring-2 focus-within:ring-purple-500/20 transition-all">
+                          <input 
+                             type="text" 
+                             value={prompt} 
+                             onChange={e => setPrompt(e.target.value)} 
+                             placeholder={t.inputPlaceholder}
+                             className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-3 px-0 text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                          />
+                          <div className="pl-2">
+                             <Mic className="w-5 h-5 text-slate-400 cursor-pointer hover:text-red-500 transition-colors" />
+                          </div>
+                       </div>
+
+                       <button type="submit" disabled={!prompt && !attachedFile} className="p-3 bg-purple-600 text-white rounded-2xl hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95 shadow-lg shadow-purple-600/20">
+                          <Send className="w-5 h-5" />
+                       </button>
+                    </div>
+                 </form>
+              </div>
+           </div>
+
+        </div>
+
+        <PreviewModal isOpen={!!previewContent} onClose={() => setPreviewContent(null)} code={previewContent} />
       </div>
     </ErrorBoundary>
   );
 };
 
 const root = createRoot(document.getElementById('root')!);
-try {
-  root.render(<App />);
-} catch (e) {
-  console.error("Critical Render Error", e);
-  document.body.innerHTML = '<div style="color:red;padding:20px;background:black;">CRITICAL RENDER ERROR: ' + e + '</div>';
-}
+root.render(<App />);
+
+// Remove splash
+const splash = document.getElementById('loading-splash');
+if(splash) splash.style.display = 'none';
