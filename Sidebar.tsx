@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { BrainCircuit, X, History, Settings, MessageCircle, Plus, Trash2, Folder, Moon, Languages, FileJson, Upload, Info, AlertOctagon } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { BrainCircuit, X, History, Settings, MessageCircle, Plus, Trash2, Folder, Moon, Languages, FileJson, Upload, Info, AlertOctagon, Download } from 'lucide-react';
 import { ChatSession, Folder as FolderType } from './types';
 
 interface SidebarProps {
@@ -37,6 +37,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
     
   const importInputRef = useRef<HTMLInputElement>(null);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setInstallPrompt(null);
+    }
+  };
 
   return (
     <>
@@ -127,6 +146,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                 ) : (
                     <div className="space-y-4 animate-in fade-in duration-200">
+                         {/* Install Button - Only shows if browser supports it */}
+                         {installPrompt && (
+                             <div className="p-2">
+                                <button 
+                                    onClick={handleInstallClick}
+                                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl shadow-lg hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 font-bold text-sm"
+                                >
+                                    <Download className="w-4 h-4" />
+                                    {lang === 'ar' ? 'تثبيت التطبيق' : 'Install App'}
+                                </button>
+                             </div>
+                         )}
+
                          <div className="space-y-3">
                              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
                                 <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"><Moon className="w-4 h-4" /> {t.theme}</label>
