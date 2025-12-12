@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { GoogleGenAI } from "@google/genai";
 import { 
   Send, BrainCircuit, Menu, Bug, FileCode, BookOpen, TestTube, ExternalLink,
-  Mic, Paperclip, Plus, X
+  Mic, Paperclip, Plus, X, AlertTriangle
 } from 'lucide-react';
 
 import { TRANSLATIONS, AI_MODELS_CONFIG } from './constants';
@@ -36,6 +36,7 @@ const App = () => {
 
   // Error logging state
   const [errorLog, setErrorLog] = useState<string[]>([]);
+  const [apiKeyError, setApiKeyError] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -64,6 +65,12 @@ const App = () => {
      };
      window.addEventListener('error', handleError);
      window.addEventListener('unhandledrejection', handleRejection);
+     
+     // PROACTIVE CHECK FOR API KEY
+     if (!process.env.API_KEY || process.env.API_KEY.includes('undefined')) {
+         setApiKeyError(true);
+     }
+
      return () => {
          window.removeEventListener('error', handleError);
          window.removeEventListener('unhandledrejection', handleRejection);
@@ -545,6 +552,17 @@ const App = () => {
                   </button>
                </div>
             </div>
+            
+            {/* API KEY ERROR BANNER - New Addition */}
+            {apiKeyError && (
+                <div className="bg-red-600 text-white p-2 text-center text-xs md:text-sm font-bold animate-in slide-in-from-top flex items-center justify-center gap-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    {lang === 'ar' 
+                      ? "تنبيه هام: مفتاح API مفقود. يرجى الذهاب إلى Vercel وعمل (Redeploy) لتحديث الموقع."
+                      : "CRITICAL: API Key is missing. Please Redeploy your Vercel project to apply settings."
+                    }
+                </div>
+            )}
 
             <div className="flex-1 overflow-y-auto p-4 md:p-8 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
                {currentSession && currentSession.messages.length > 0 ? (
@@ -568,8 +586,6 @@ const App = () => {
                      <BrainCircuit className="w-24 h-24 mb-6 text-indigo-500 animate-pulse-slow" />
                      <h1 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-600 mb-4 tracking-tight">{t.appTitle}</h1>
                      <p className="text-lg md:text-xl text-slate-500 dark:text-slate-400 mb-8 max-w-md text-center leading-relaxed">{t.subTitle}</p>
-                     
-                     {/* CLEANED UP: Removed suggested prompt grid as requested */}
                   </div>
                )}
                <div ref={messagesEndRef} />

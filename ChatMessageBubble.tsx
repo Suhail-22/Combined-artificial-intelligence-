@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Clock, Bot, Loader2, Copy, Download, FolderPlus, RotateCcw, Scale, Lightbulb, Trophy, Users, Star, Check, ChevronDown } from 'lucide-react';
+import { User, Clock, Bot, Loader2, Copy, Download, FolderPlus, RotateCcw, Scale, Lightbulb, Trophy, Users, Star, Check, ChevronDown, AlertTriangle } from 'lucide-react';
 import { AI_MODELS_CONFIG } from './constants';
 import { CodeBlock } from './CodeBlock';
 import { ChatMessage, Folder } from './types';
@@ -17,6 +17,30 @@ interface ChatMessageBubbleProps {
   onSuggestionClick: (text: string) => void;
   onRetry: (msg: ChatMessage) => void;
 }
+
+const formatError = (error: string, lang: string) => {
+    if (!error) return "Unknown Error";
+    
+    // Check for specific Vercel/API Key issues
+    if (error.includes('API key not valid') || error.includes('400')) {
+        return lang === 'ar' 
+            ? "⚠️ تنبيه إعدادات: مفتاح API غير صالح أو لم يتم تحديثه. يرجى التأكد من إضافة المفتاح في Vercel ثم عمل (Redeploy) لتحديث الموقع."
+            : "⚠️ Setup Error: API Key is invalid or outdated. Please check Vercel Settings and trigger a 'Redeploy' to apply changes.";
+    }
+
+    // Try parsing raw JSON error from Google
+    try {
+        // Extract JSON if it's wrapped in text
+        const jsonMatch = error.match(/\{[\s\S]*\}/);
+        const jsonStr = jsonMatch ? jsonMatch[0] : error;
+        const parsed = JSON.parse(jsonStr);
+        if (parsed.error?.message) return `Google API Error: ${parsed.error.message}`;
+    } catch (e) {
+        // Raw text
+    }
+
+    return error.length > 200 ? error.substring(0, 200) + "..." : error;
+};
 
 export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang, folders, onSaveSnippet, onPreview, t, onCompare, onConsensus, onSuggestionClick, onRetry }) => {
   const isUser = msg.role === 'user';
@@ -147,10 +171,15 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang,
                                    <span className="text-xs text-slate-500">{t.thinking}</span>
                                 </div>
                              ) : data?.error ? (
-                                <div className="text-red-500 text-sm p-4 bg-red-50 dark:bg-red-900/10 rounded-lg flex flex-col items-start gap-2">
-                                    <p>{data.error}</p>
-                                    <button onClick={() => onRetry(msg)} className="text-xs bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 px-3 py-1 rounded-full flex items-center gap-1 hover:bg-red-200 transition-colors">
-                                        <RotateCcw className="w-3 h-3" /> {t.retry}
+                                <div className="p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-lg flex flex-col gap-3">
+                                    <div className="flex items-start gap-2">
+                                        <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                                        <p className="text-sm text-red-700 dark:text-red-300 font-medium leading-relaxed">
+                                            {formatError(data.error, lang)}
+                                        </p>
+                                    </div>
+                                    <button onClick={() => onRetry(msg)} className="self-end text-xs bg-white dark:bg-red-900/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-2 rounded-full flex items-center gap-1.5 hover:bg-red-50 transition-colors shadow-sm font-bold">
+                                        <RotateCcw className="w-3.5 h-3.5" /> {t.retry}
                                     </button>
                                 </div>
                              ) : (
@@ -260,7 +289,6 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang,
               {/* Comparison Result */}
               {msg.comparison && (
                  <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-700/30 rounded-xl p-4 animate-in slide-in-from-top-2 relative group">
-                    {/* UPDATED HEADER: Flex Between to put copy button opposite to title */}
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400 font-bold text-sm">
                            <Trophy className="w-4 h-4" /> {t.judgeVerdict}
@@ -294,7 +322,6 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang,
                        ))}
                     </div>
 
-                    {/* Consensus Button */}
                     {!msg.consensus && (
                       <div className="mt-4 border-t border-yellow-200 dark:border-yellow-700/30 pt-4 flex justify-center">
                         <button 
@@ -326,7 +353,14 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang,
                          <span className="text-xs text-indigo-600 dark:text-indigo-400">{t.thinking}</span>
                       </div>
                     ) : msg.consensus.error ? (
-                       <div className="text-red-500 text-sm">{msg.consensus.error}</div>
+                        <div className="p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-lg flex flex-col gap-2">
+                             <div className="flex items-start gap-2">
+                                <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                                <p className="text-xs text-red-700 dark:text-red-300 font-medium">
+                                    {formatError(msg.consensus.error, lang)}
+                                </p>
+                             </div>
+                        </div>
                     ) : (
                        <div className="consensus-content">
                           <CodeBlock 
@@ -352,7 +386,6 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang,
                                 >
                                    <FolderPlus className="w-3.5 h-3.5" /> {t.save} <ChevronDown className="w-3 h-3" />
                                 </button>
-                                {/* Consensus Save Dropdown */}
                                 {showConsensusSaveMenu && (
                                     <div className="absolute right-0 bottom-full mb-1 w-40 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100">
                                         {folders.map(f => (
