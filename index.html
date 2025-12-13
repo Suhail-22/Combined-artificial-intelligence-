@@ -13,6 +13,9 @@
   <meta name="apple-mobile-web-app-title" content="Tri-Coder">
   <link rel="apple-touch-icon" href="https://placehold.co/192x192/7e22ce/ffffff.png?text=AI">
 
+  <!-- PrismJS Theme (One Dark) -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-one-dark.min.css" rel="stylesheet" />
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -45,11 +48,26 @@
     body {
       overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile app mode */
     }
+
+    /* Force Code Blocks LTR even in RTL mode */
+    code, pre {
+        direction: ltr !important;
+        text-align: left !important;
+        font-family: 'Fira Code', 'Courier New', monospace;
+    }
   </style>
 <link rel="stylesheet" href="/index.css">
 </head>
 <body>
   <div id="root"></div>
+  <!-- PrismJS Core -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>

@@ -26,6 +26,7 @@ export interface ChatMessage {
     }
   };
   timestamp: number;
+  comparisonLoading?: boolean; // NEW: Track judging status
   comparison?: any;
   consensus?: {
     text: string;

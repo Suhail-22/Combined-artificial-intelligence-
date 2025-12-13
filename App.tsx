@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { GoogleGenAI } from "@google/genai";
 import { 
   Send, BrainCircuit, Menu, Bug, FileCode, BookOpen, TestTube, ExternalLink,
-  Mic, Paperclip, Plus, X, AlertTriangle
+  Mic, Paperclip, Plus, X, AlertTriangle, Key
 } from 'lucide-react';
 
 import { TRANSLATIONS, AI_MODELS_CONFIG } from './constants';
@@ -17,7 +17,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 
 const App = () => {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [lang, setLang] = useState<'en' | 'ar'>('ar'); // Default to Arabic
+  const [lang, setLang] = useState<'en' | 'ar'>('ar'); 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarTab, setSidebarTab] = useState<'history' | 'settings'>('history');
   const [deepThinking, setDeepThinking] = useState(false);
@@ -34,10 +34,14 @@ const App = () => {
   const [activeToolId, setActiveToolId] = useState<string | null>(null);
   const [attachedFile, setAttachedFile] = useState<{name: string, data: string, mime: string} | null>(null);
 
+  // API Key Management
+  const [userApiKey, setUserApiKey] = useState<string>(() => localStorage.getItem('USER_API_KEY') || '');
+  const systemApiKey = process.env.API_KEY;
+  const finalApiKey = (systemApiKey && !systemApiKey.includes('undefined') && systemApiKey.length > 5) ? systemApiKey : userApiKey;
+
   // Error logging state
   const [errorLog, setErrorLog] = useState<string[]>([]);
-  const [apiKeyError, setApiKeyError] = useState(false);
-
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -53,11 +57,11 @@ const App = () => {
     { id: 'convert', icon: <ExternalLink className="w-4 h-4" />, label: t.tools.convert, prompt: "Convert this code to a different language/framework (infer target from context or provide best alternative):" },
   ], [t]);
 
-  // Global Error Handler for Logging
+  // Global Error Handler
   useEffect(() => {
      const handleError = (event: ErrorEvent) => {
          const msg = `[${new Date().toISOString()}] ERROR: ${event.message} at ${event.filename}:${event.lineno}`;
-         setErrorLog(prev => [msg, ...prev].slice(0, 50)); // Keep last 50
+         setErrorLog(prev => [msg, ...prev].slice(0, 50));
      };
      const handleRejection = (event: PromiseRejectionEvent) => {
          const msg = `[${new Date().toISOString()}] PROMISE_REJECT: ${event.reason}`;
@@ -65,12 +69,6 @@ const App = () => {
      };
      window.addEventListener('error', handleError);
      window.addEventListener('unhandledrejection', handleRejection);
-     
-     // PROACTIVE CHECK FOR API KEY
-     if (!process.env.API_KEY || process.env.API_KEY.includes('undefined')) {
-         setApiKeyError(true);
-     }
-
      return () => {
          window.removeEventListener('error', handleError);
          window.removeEventListener('unhandledrejection', handleRejection);
@@ -123,6 +121,11 @@ const App = () => {
     }
   }, [input]);
 
+  const handleUpdateApiKey = (key: string) => {
+      setUserApiKey(key);
+      localStorage.setItem('USER_API_KEY', key);
+  };
+
   const createNewChat = async () => {
     const newSession: ChatSession = {
       id: generateId(),
@@ -161,10 +164,29 @@ const App = () => {
       historyMsgs: ChatMessage[],
       attachment?: {data: string, mime: string}
     ) => {
-      
+    
+    if (!finalApiKey) {
+        const errorMsg = lang === 'ar' ? 'مفتاح API مفقود. يرجى إضافته في الإعدادات.' : 'API Key missing. Please add it in Settings.';
+        setSessions(prev => {
+            const sess = prev.find(s => s.id === sessionId);
+            if (!sess) return prev;
+            const msgs = [...sess.messages];
+            const msgIdx = msgs.findIndex(m => m.id === aiMsgId);
+            if (msgIdx === -1) return prev;
+            const lastMsg = msgs[msgIdx];
+            const newModelsData = { ...lastMsg.modelsData };
+            [0,1,2].forEach(i => newModelsData[i] = { ...newModelsData[i], loading: false, error: errorMsg });
+            msgs[msgIdx] = { ...lastMsg, modelsData: newModelsData };
+            return prev.map(s => s.id === sessionId ? { ...sess, messages: msgs } : s);
+        });
+        setSidebarOpen(true);
+        setSidebarTab('settings');
+        return;
+    }
+
     AI_MODELS_CONFIG.forEach(async (modelConfig, index) => {
       try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const ai = new GoogleGenAI({ apiKey: finalApiKey });
         const historyParts = historyMsgs.map(m => ({
             role: m.role,
             parts: [{ text: m.content || '' }]
@@ -196,7 +218,6 @@ const App = () => {
         }
         msgParts.push({ text: userContent });
 
-        // FIX: Pass as object with 'message' property
         // @ts-ignore
         const resultStream = await chat.sendMessageStream({ message: msgParts });
 
@@ -332,7 +353,14 @@ const App = () => {
   };
 
   const handleCompare = async (msg: ChatMessage) => {
+    if(!finalApiKey) { alert("API Key missing"); return; }
     if(!msg.modelsData) return;
+
+    // Set Loading State
+    const sess = sessions.find(s => s.id === currentSessionId)!;
+    const loadingMsg = { ...msg, comparisonLoading: true };
+    updateSession({ ...sess, messages: sess.messages.map(m => m.id === msg.id ? loadingMsg : m) });
+
     const texts = Object.values(msg.modelsData).map((d, i) => `Model ${AI_MODELS_CONFIG[i].name}:\n${d.text}`).join('\n\n');
     
     let prompt = `You are an impartial senior technical judge. Evaluate these 3 solutions to the user's problem.
@@ -355,7 +383,7 @@ const App = () => {
     }
 
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const ai = new GoogleGenAI({ apiKey: finalApiKey });
         const resp = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
@@ -363,19 +391,20 @@ const App = () => {
         });
         const json = JSON.parse(resp.text || '{}');
         
-        const newMsg = { ...msg, comparison: json };
-        const sess = sessions.find(s => s.id === currentSessionId)!;
-        const newMsgs = sess.messages.map(m => m.id === msg.id ? newMsg : m);
-        updateSession({ ...sess, messages: newMsgs });
+        const newMsg = { ...msg, comparison: json, comparisonLoading: false };
+        updateSession({ ...sess, messages: sess.messages.map(m => m.id === msg.id ? newMsg : m) });
 
     } catch(e: any) {
         console.error(e);
         setErrorLog(prev => [`Comparison Error: ${e.message}`, ...prev]);
-        alert('Comparison failed to generate JSON');
+        const errorMsg = { ...msg, comparisonLoading: false }; // Clear loading on error
+        updateSession({ ...sess, messages: sess.messages.map(m => m.id === msg.id ? errorMsg : m) });
+        alert('Comparison failed.');
     }
   };
 
   const handleConsensus = async (msg: ChatMessage) => {
+     if(!finalApiKey) { alert("API Key missing"); return; }
      if(!msg.modelsData || !msg.comparison) return;
      
      const newMsg = { ...msg, consensus: { text: '', loading: true, error: null } };
@@ -383,7 +412,7 @@ const App = () => {
      updateSession({ ...sess, messages: sess.messages.map(m => m.id === msg.id ? newMsg : m) });
 
      try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const ai = new GoogleGenAI({ apiKey: finalApiKey });
         let prompt = `You are a Principal Software Engineer. 
         User Question: "..." (context)
         
@@ -429,7 +458,6 @@ const App = () => {
       const newFolders = folders.map(f => f.id === folderId ? updatedFolder : f);
       setFolders(newFolders);
       await dbHelper.put('folders', updatedFolder);
-      // alert('Saved successfully!'); // REMOVED: Handled by button UI state in ChatMessageBubble
   };
 
   const handleCreateFolder = async () => {
@@ -526,7 +554,9 @@ const App = () => {
           handleExportBackup={handleExportBackup} handleImportBackup={handleImportBackup}
           handleOpenHelp={() => setIsHelpOpen(true)}
           handleReportBug={handleReportBug}
+          apiKey={userApiKey} setApiKey={handleUpdateApiKey}
           t={t}
+          onViewSnippet={setPreviewCode}
         />
 
         <div className="flex-1 flex flex-col h-full relative w-full">
@@ -553,15 +583,18 @@ const App = () => {
                </div>
             </div>
             
-            {/* API KEY ERROR BANNER - New Addition */}
-            {apiKeyError && (
-                <div className="bg-red-600 text-white p-2 text-center text-xs md:text-sm font-bold animate-in slide-in-from-top flex items-center justify-center gap-2">
+            {/* API KEY ERROR BANNER - CLICKABLE */}
+            {!finalApiKey && (
+                <button 
+                  onClick={() => { setSidebarOpen(true); setSidebarTab('settings'); }}
+                  className="w-full bg-red-600 text-white p-2 text-center text-xs md:text-sm font-bold animate-in slide-in-from-top flex items-center justify-center gap-2 hover:bg-red-700 transition-colors cursor-pointer"
+                >
                     <AlertTriangle className="w-4 h-4" />
                     {lang === 'ar' 
-                      ? "تنبيه هام: مفتاح API مفقود. يرجى الذهاب إلى Vercel وعمل (Redeploy) لتحديث الموقع."
-                      : "CRITICAL: API Key is missing. Please Redeploy your Vercel project to apply settings."
+                      ? "مفتاح API مفقود! اضغط هنا لإضافته يدوياً في الإعدادات."
+                      : "API Key missing! Click here to add it manually in Settings."
                     }
-                </div>
+                </button>
             )}
 
             <div className="flex-1 overflow-y-auto p-4 md:p-8 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">

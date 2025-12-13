@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { BrainCircuit, X, History, Settings, MessageCircle, Plus, Trash2, Folder, Moon, Languages, FileJson, Upload, Info, AlertOctagon, Download } from 'lucide-react';
+import { BrainCircuit, X, History, Settings, MessageCircle, Plus, Trash2, Folder, Moon, Languages, FileJson, Upload, Info, AlertOctagon, Download, Key, Check, ChevronDown, ChevronRight, FileCode } from 'lucide-react';
 import { ChatSession, Folder as FolderType } from './types';
 
 interface SidebarProps {
@@ -26,18 +26,30 @@ interface SidebarProps {
   handleImportBackup: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleOpenHelp: () => void;
   handleReportBug: () => void;
+  apiKey: string;
+  setApiKey: (key: string) => void;
   t: any;
+  onViewSnippet: (code: string) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
     isOpen, setIsOpen, lang, setLang, theme, setTheme, tab, setTab,
     sessions, currentSessionId, setCurrentSessionId, createNewChat, deleteSession,
     folders, showNewFolderInput, setShowNewFolderInput, newFolderName, setNewFolderName, handleCreateFolder,
-    handleExportBackup, handleImportBackup, handleOpenHelp, handleReportBug, t
+    handleExportBackup, handleImportBackup, handleOpenHelp, handleReportBug,
+    apiKey, setApiKey,
+    t, onViewSnippet
 }) => {
     
   const importInputRef = useRef<HTMLInputElement>(null);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [tempKey, setTempKey] = useState(apiKey);
+  const [keySaved, setKeySaved] = useState(false);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+      setTempKey(apiKey);
+  }, [apiKey]);
 
   useEffect(() => {
     const handler = (e: any) => {
@@ -55,6 +67,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (outcome === 'accepted') {
       setInstallPrompt(null);
     }
+  };
+
+  const saveKey = () => {
+      setApiKey(tempKey);
+      setKeySaved(true);
+      setTimeout(() => setKeySaved(false), 2000);
+  };
+
+  const toggleFolder = (id: string) => {
+      const next = new Set(expandedFolders);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      setExpandedFolders(next);
   };
 
   return (
@@ -132,21 +157,45 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             )}
 
                             <div className="space-y-1">
-                                {folders.map(f => (
-                                    <div key={f.id} className="text-sm">
-                                        <div className="flex items-center justify-between p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer text-slate-600 dark:text-slate-400">
-                                            <span className="flex items-center gap-2"><Folder className="w-3.5 h-3.5 fill-slate-300 dark:fill-slate-700" /> {f.name}</span>
-                                            <span className="text-xs bg-slate-200 dark:bg-slate-700 px-1.5 rounded-full">{f.snippets.length}</span>
+                                {folders.map(f => {
+                                    const isExpanded = expandedFolders.has(f.id);
+                                    return (
+                                        <div key={f.id} className="text-sm">
+                                            <div 
+                                                onClick={() => toggleFolder(f.id)}
+                                                className="flex items-center justify-between p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer text-slate-600 dark:text-slate-400"
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    {isExpanded ? <ChevronDown className="w-3 h-3 text-slate-400"/> : <ChevronRight className={`w-3 h-3 text-slate-400 ${lang === 'ar' ? 'rotate-180' : ''}`}/>}
+                                                    <span className="flex items-center gap-2"><Folder className="w-3.5 h-3.5 fill-slate-300 dark:fill-slate-700" /> {f.name}</span>
+                                                </div>
+                                                <span className="text-xs bg-slate-200 dark:bg-slate-700 px-1.5 rounded-full">{f.snippets.length}</span>
+                                            </div>
+                                            {isExpanded && (
+                                                <div className="pl-6 pr-2 space-y-1 mt-1 border-l-2 border-slate-100 dark:border-slate-800 ml-3">
+                                                    {f.snippets.map(snippet => (
+                                                        <div 
+                                                            key={snippet.id} 
+                                                            onClick={() => onViewSnippet(snippet.code)}
+                                                            className="flex items-center gap-2 p-1.5 text-xs text-slate-500 hover:text-indigo-600 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded cursor-pointer"
+                                                        >
+                                                            <FileCode className="w-3 h-3 shrink-0" />
+                                                            <span className="truncate">{snippet.title}</span>
+                                                        </div>
+                                                    ))}
+                                                    {f.snippets.length === 0 && <p className="text-[10px] text-slate-400 italic pl-2">Empty</p>}
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                                 {folders.length === 0 && <p className="text-xs text-slate-500 px-2 italic">No folders</p>}
                             </div>
                         </div>
                     </div>
                 ) : (
                     <div className="space-y-4 animate-in fade-in duration-200">
-                         {/* Install Button - Only shows if browser supports it */}
+                         {/* Install Button */}
                          {installPrompt && (
                              <div className="p-2">
                                 <button 
@@ -160,6 +209,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
                          )}
 
                          <div className="space-y-3">
+                             {/* API Key Input */}
+                             <div className="p-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30">
+                                 <label className="text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-2 flex items-center gap-1.5 uppercase">
+                                     <Key className="w-3.5 h-3.5" /> API Configuration
+                                 </label>
+                                 <div className="flex gap-2">
+                                     <input 
+                                        type="password" 
+                                        value={tempKey}
+                                        onChange={(e) => setTempKey(e.target.value)}
+                                        placeholder="Paste Gemini API Key..."
+                                        className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
+                                     />
+                                     <button 
+                                        onClick={saveKey}
+                                        className="bg-indigo-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-indigo-700 transition-colors flex items-center"
+                                     >
+                                        {keySaved ? <Check className="w-3.5 h-3.5" /> : 'Save'}
+                                     </button>
+                                 </div>
+                                 <p className="text-[10px] text-indigo-500/70 dark:text-indigo-400/50 mt-1 leading-tight">
+                                     {lang === 'ar' ? 'أضف المفتاح هنا إذا لم يعمل النشر التلقائي.' : 'Add key here if Vercel deploy fails.'}
+                                 </p>
+                             </div>
+
                              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
                                 <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"><Moon className="w-4 h-4" /> {t.theme}</label>
                                 <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="w-10 h-6 bg-slate-300 dark:bg-slate-700 rounded-full relative transition-colors">
