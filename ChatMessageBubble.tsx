@@ -11,7 +11,6 @@ interface ChatMessageBubbleProps {
   folders: Folder[];
   onSaveSnippet: (folderId: string, code: string, lang: string) => void;
   onPreview: (code: string) => void;
-  onOpenWorkspace: (code: string, lang: string) => void;
   t: any;
   onCompare: (msg: ChatMessage) => void;
   onConsensus: (msg: ChatMessage) => void;
@@ -43,7 +42,7 @@ const formatError = (error: string, lang: string) => {
     return error.length > 200 ? error.substring(0, 200) + "..." : error;
 };
 
-export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang, folders, onSaveSnippet, onPreview, onOpenWorkspace, t, onCompare, onConsensus, onSuggestionClick, onRetry }) => {
+export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang, folders, onSaveSnippet, onPreview, t, onCompare, onConsensus, onSuggestionClick, onRetry }) => {
   const isUser = msg.role === 'user';
   const [activeTab, setActiveTab] = useState(0);
   
@@ -56,13 +55,18 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang,
   const [showMainSaveMenu, setShowMainSaveMenu] = useState(false);
   const [showConsensusSaveMenu, setShowConsensusSaveMenu] = useState(false);
 
-  // Collapsible State (DeepSeek Style) - Default to FALSE (Collapsed) for speed
-  const [isExpanded, setIsExpanded] = useState(false);
+  // Collapsible State (DeepSeek Style)
+  const [isExpanded, setIsExpanded] = useState(true);
 
   const currentModelData = msg.modelsData?.[activeTab];
   const isFinished = !currentModelData?.loading && !currentModelData?.error && currentModelData?.text;
   const isLoading = currentModelData?.loading;
   const hasError = !!currentModelData?.error;
+
+  // Auto-expand when loading starts, optional auto-collapse when done could be added here
+  useEffect(() => {
+    if (isLoading) setIsExpanded(true);
+  }, [isLoading]);
 
   // --- Handlers ---
 
@@ -152,4 +156,299 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ msg, lang,
                          className={`flex-1 py-3 px-4 flex items-center justify-center gap-2 text-xs md:text-sm font-medium transition-all whitespace-nowrap ${
                             activeTab === idx 
                               ? `bg-white dark:bg-slate-900 ${config.colorClass.split(' ')[0]} border-b-2 ${config.colorClass.split(' ')[0].replace('text-', 'border-')}` 
-                              : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-
+                              : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900'
+                         }`}
+                       >
+                          {config.icon}
+                          <span className="hidden sm:inline">{config.name}</span>
+                          <span className="sm:hidden">{config.shortName}</span>
+                       </button>
+                    ))}
+                 </div>
+
+                 {/* Tab Content - Collapsible DeepSeek Style */}
+                 <div className="bg-white dark:bg-slate-900/50 relative transition-all">
+                    
+                    {/* Collapsible Header */}
+                    <div 
+                        onClick={() => setIsExpanded(!isExpanded)} 
+                        className="flex items-center gap-2 p-3 cursor-pointer bg-slate-50/50 dark:bg-slate-800/30 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors border-b border-slate-100 dark:border-slate-800/50 select-none"
+                    >
+                        {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-500" /> : <ChevronRight className={`w-4 h-4 text-slate-500 ${lang === 'ar' ? 'rotate-180' : ''}`} />}
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                            {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                            {isLoading ? t.thinking : (isExpanded ? "Collapse Content" : "Show Analysis")}
+                        </span>
+                        {!isExpanded && currentModelData?.text && (
+                             <span className="text-[10px] text-slate-400 truncate max-w-[200px]">
+                                 {currentModelData.text.slice(0, 50)}...
+                             </span>
+                        )}
+                    </div>
+
+                    {/* Content Area */}
+                    {isExpanded && (
+                        <div className="p-4 md:p-6 min-h-[150px] animate-in slide-in-from-top-2 duration-200">
+                            {AI_MODELS_CONFIG.map((config, idx) => {
+                                const data = msg.modelsData?.[idx];
+                                if (activeTab !== idx) return null;
+
+                                return (
+                                    <div key={idx}>
+                                        {data?.loading && !data.text ? (
+                                            <div className="flex flex-col items-center justify-center py-10 opacity-60">
+                                            <Loader2 className="w-8 h-8 animate-spin text-slate-400 mb-2" />
+                                            <span className="text-xs text-slate-500">{t.thinking}</span>
+                                            </div>
+                                        ) : data?.error ? (
+                                            <div className="p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-lg flex flex-col gap-3">
+                                                <div className="flex items-start gap-2">
+                                                    <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                                                    <p className="text-sm text-red-700 dark:text-red-300 font-medium leading-relaxed">
+                                                        {formatError(data.error, lang)}
+                                                    </p>
+                                                </div>
+                                                <button onClick={() => onRetry(msg)} className="self-end text-xs bg-white dark:bg-red-900/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-2 rounded-full flex items-center gap-1.5 hover:bg-red-50 transition-colors shadow-sm font-bold">
+                                                    <RotateCcw className="w-3.5 h-3.5" /> {t.retry}
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <CodeBlock 
+                                            content={data?.text || ''} 
+                                            folders={folders} 
+                                            onSaveSnippet={onSaveSnippet}
+                                            onPreview={onPreview}
+                                            t={t}
+                                            />
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                 </div>
+
+                 {/* Footer Actions */}
+                 {(isFinished || hasError) && isExpanded && (
+                   <div className="bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 p-2 flex flex-wrap items-center justify-between gap-2 animate-in fade-in">
+                      
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={handleCopyMain}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                          disabled={hasError}
+                        >
+                          {mainCopied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                          {mainCopied ? t.copied : t.copy}
+                        </button>
+
+                        <button 
+                           onClick={handleDownload}
+                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                           disabled={hasError}
+                        >
+                           <Download className="w-3.5 h-3.5" /> {t.download}
+                        </button>
+                        
+                        <div className="relative">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setShowMainSaveMenu(!showMainSaveMenu); }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors" 
+                            disabled={hasError}
+                          >
+                            <FolderPlus className="w-3.5 h-3.5" /> {t.saveToFolder} <ChevronDown className="w-3 h-3" />
+                          </button>
+                          {showMainSaveMenu && !hasError && (
+                              <div className="absolute left-0 bottom-full mb-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                                {folders.length === 0 ? (
+                                <div className="p-2 text-[10px] text-slate-500 italic">No folders</div>
+                                ) : (
+                                folders.map(f => (
+                                    <button 
+                                    key={f.id} 
+                                    onClick={(e) => { e.stopPropagation(); onSaveSnippet(f.id, currentModelData?.text || '', 'txt'); setShowMainSaveMenu(false); }} 
+                                    className="w-full text-left px-3 py-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-700 truncate"
+                                    >
+                                    {f.name}
+                                    </button>
+                                ))
+                                )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button 
+                            onClick={() => onRetry(msg)}
+                            className="text-xs flex items-center gap-1 px-3 py-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full font-bold transition-colors shadow-sm"
+                            title={t.retry}
+                        >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                        </button>
+                        <button 
+                            onClick={() => onCompare(msg)}
+                            disabled={hasError || msg.comparisonLoading}
+                            className={`text-xs flex items-center gap-1 px-3 py-1.5 rounded-full font-bold transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${msg.comparisonLoading ? 'bg-yellow-200 text-yellow-800 cursor-wait' : 'bg-yellow-400 hover:bg-yellow-300 text-slate-900'}`}
+                        >
+                            {msg.comparisonLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Scale className="w-3.5 h-3.5" />} 
+                            {msg.comparisonLoading ? t.thinking : t.judge}
+                        </button>
+                      </div>
+                   </div>
+                 )}
+              </div>
+
+              {/* Suggestions */}
+              {(isFinished && !hasError) && (
+                <div className="mt-3 flex items-start gap-2 animate-in fade-in slide-in-from-top-1 duration-500">
+                  <div className="mt-1">
+                    <Lightbulb className="w-4 h-4 text-yellow-500 fill-yellow-500/20" />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {t.suggestedPrompts.map((prompt: string, idx: number) => (
+                      <button
+                        key={idx}
+                        onClick={() => onSuggestionClick(prompt)}
+                        className="px-3 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-xs text-slate-600 dark:text-slate-300 hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-400 transition-colors shadow-sm"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Comparison Result */}
+              {msg.comparison && (
+                 <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-700/30 rounded-xl p-4 animate-in slide-in-from-top-2 relative group">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400 font-bold text-sm">
+                           <Trophy className="w-4 h-4" /> {t.judgeVerdict}
+                        </div>
+                        
+                        <button 
+                            onClick={handleCopyJudge}
+                            className="flex items-center gap-1 p-1.5 bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-200 rounded hover:bg-yellow-200 dark:hover:bg-yellow-800 text-xs transition-colors"
+                            title={t.copy}
+                        >
+                            {judgeCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                            {judgeCopied && <span className="text-[10px] font-bold">{t.copied}</span>}
+                        </button>
+                    </div>
+
+                    <div className="text-sm text-slate-700 dark:text-slate-300 mb-3">
+                       <span className="font-bold">{t.winner}:</span> {msg.comparison.winner}
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4 whitespace-pre-wrap">{msg.comparison.reasoning}</p>
+                    <div className="grid grid-cols-3 gap-2">
+                       {msg.comparison.scores.map((s: any, i: number) => (
+                          <button 
+                            key={i} 
+                            onClick={() => setActiveTab(i)}
+                            className={`bg-white dark:bg-slate-800 p-2 rounded border border-yellow-100 dark:border-yellow-900/20 text-center transition-all hover:scale-105 active:scale-95 hover:border-yellow-300 dark:hover:border-yellow-600 ${activeTab === i ? 'ring-2 ring-yellow-400 dark:ring-yellow-600' : ''}`}
+                            title="Click to view this model's answer"
+                          >
+                             <div className="text-[10px] text-slate-500 truncate pointer-events-none">{s.model}</div>
+                             <div className="text-xs font-bold text-slate-800 dark:text-slate-200 pointer-events-none">{s.performance}/10</div>
+                          </button>
+                       ))}
+                    </div>
+
+                    {!msg.consensus && (
+                      <div className="mt-4 border-t border-yellow-200 dark:border-yellow-700/30 pt-4 flex justify-center">
+                        <button 
+                          onClick={() => onConsensus(msg)}
+                          className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white rounded-full font-bold shadow-md shadow-amber-500/20 transition-all hover:scale-105 active:scale-95"
+                        >
+                          <Users className="w-4 h-4" />
+                          {t.consensusBtn}
+                        </button>
+                      </div>
+                    )}
+                 </div>
+              )}
+
+              {/* Consensus Result */}
+              {msg.consensus && (
+                <div className="mt-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-slate-900 dark:to-slate-800 border border-indigo-200 dark:border-indigo-800 rounded-xl overflow-hidden shadow-lg animate-in slide-in-from-bottom-2 duration-500">
+                  <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-3 flex items-center gap-2 text-white">
+                    <Star className="w-5 h-5 text-yellow-300 fill-yellow-300" />
+                    <span className="font-bold text-sm">{t.consensusTitle}</span>
+                  </div>
+                  
+                  <div className="p-4 bg-white/50 dark:bg-black/20">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 italic mb-4">{t.consensusDesc}</p>
+                    
+                    {msg.consensus.loading ? (
+                      <div className="flex flex-col items-center justify-center py-8 opacity-60">
+                         <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mb-2" />
+                         <span className="text-xs text-indigo-600 dark:text-indigo-400">{t.thinking}</span>
+                      </div>
+                    ) : msg.consensus.error ? (
+                        <div className="p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-lg flex flex-col gap-2">
+                             <div className="flex items-start gap-2">
+                                <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                                <p className="text-xs text-red-700 dark:text-red-300 font-medium">
+                                    {formatError(msg.consensus.error, lang)}
+                                </p>
+                             </div>
+                        </div>
+                    ) : (
+                       <div className="consensus-content">
+                          <CodeBlock 
+                            content={msg.consensus.text || ''} 
+                            folders={folders} 
+                            onSaveSnippet={onSaveSnippet}
+                            onPreview={onPreview}
+                            t={t}
+                          />
+                          <div className="mt-2 flex justify-end gap-2">
+                             <button 
+                                onClick={handleCopyConsensus}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors"
+                             >
+                                {consensusCopied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />} 
+                                {consensusCopied ? t.copied : t.copy}
+                             </button>
+
+                             <div className="relative">
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); setShowConsensusSaveMenu(!showConsensusSaveMenu); }}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors"
+                                >
+                                   <FolderPlus className="w-3.5 h-3.5" /> {t.save} <ChevronDown className="w-3 h-3" />
+                                </button>
+                                {showConsensusSaveMenu && (
+                                    <div className="absolute right-0 bottom-full mb-1 w-40 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100">
+                                        {folders.length === 0 ? (
+                                            <div className="p-2 text-[10px] text-slate-500 italic">No folders</div>
+                                        ) : (
+                                        folders.map(f => (
+                                          <button 
+                                              key={f.id} 
+                                              onClick={(e) => { 
+                                                  e.stopPropagation(); 
+                                                  onSaveSnippet(f.id, msg.consensus?.text || '', 'txt'); 
+                                                  setShowConsensusSaveMenu(false); 
+                                              }} 
+                                              className="w-full text-left px-3 py-2 text-[10px] hover:bg-slate-100 dark:hover:bg-slate-700 truncate"
+                                          >
+                                              {f.name}
+                                          </button>
+                                        )))}
+                                    </div>
+                                )}
+                             </div>
+                          </div>
+                       </div>
+                    )}
+                  </div>
+                </div>
+              )}
+           </div>
+        </div>
+      </div>
+    </div>
+  );
+};
