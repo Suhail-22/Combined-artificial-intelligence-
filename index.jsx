@@ -246,7 +246,7 @@
     </div>
     
     <!-- ✅✅✅ السطر المصحح (الأهم) ✅✅✅ -->
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="/src/main.jsx"></script>
     
     <!-- Service Worker for PWA -->
     <script>
