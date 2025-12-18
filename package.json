@@ -1,26 +1,9 @@
 {
-  "name": "combined-artificial-intelligence",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "name": "ai-app-boulder",
+  "version": "1.0.0",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "echo 'No build step needed' && exit 0"
   },
-  "dependencies": {
-    "lucide-react": "^0.559.0",
-    "react": "^19.2.1",
-    "react-dom": "^19.2.1",
-    "@google/genai": "^1.32.0",
-    "jszip": "3.10.1",
-    "vite": "^7.2.7",
-    "@vitejs/plugin-react": "^5.1.2"
-  },
-  "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
-  }
+  "dependencies": {},
+  "devDependencies": {}
 }
