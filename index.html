@@ -1,73 +1,31 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Tri-Coder AI</title>
-  
-  <!-- PWA Settings -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0f172a">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Tri-Coder">
-  <link rel="apple-touch-icon" href="https://placehold.co/192x192/7e22ce/ffffff.png?text=AI">
-
-  <!-- PrismJS Theme (One Dark) -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-one-dark.min.css" rel="stylesheet" />
-
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-    }
-  </script>
-  <script type="importmap">
-{
-  "imports": {
-    "lucide-react": "https://esm.sh/lucide-react@^0.559.0",
-    "react/": "https://esm.sh/react@^19.2.1/",
-    "react": "https://esm.sh/react@^19.2.1",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.1/",
-    "react-dom": "https://esm.sh/react-dom@^19.2.1",
-    "@google/genai": "https://esm.sh/@google/genai@^1.32.0",
-    "jszip": "https://esm.sh/jszip@3.10.1",
-    "vite": "https://esm.sh/vite@^7.2.7",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
-  }
-}
-</script>
-  <style>
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #475569; }
-    
-    /* PWA Mobile Tweaks */
-    body {
-      overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile app mode */
-    }
-
-    /* Force Code Blocks LTR even in RTL mode */
-    code, pre {
-        direction: ltr !important;
-        text-align: left !important;
-        font-family: 'Fira Code', 'Courier New', monospace;
-    }
-  </style>
-<link rel="stylesheet" href="/index.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 المبرمج الثلاثي - مع DeepSeek AI المجاني</title>
+    <meta name="description" content="مساعد برمجي ذكي يستخدم DeepSeek AI المجاني لحل المشاكل البرمجية، التصحيح، التحسين، الشرح والتحويل بين اللغات.">
+    <link rel="stylesheet" href="App.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
 </head>
 <body>
-  <div id="root"></div>
-  <!-- PrismJS Core -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
-  <script type="module" src="/index.tsx"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- تذييل إضافي -->
+    <div style="text-align: center; margin-top: 20px; padding: 20px; color: white; font-size: 14px;">
+        <p>⚡ يستخدم <strong>DeepSeek AI</strong> - مجاني 10 مليون رمز شهرياً</p>
+        <p>🔗 <a href="https://platform.deepseek.com/api_keys" target="_blank" style="color: #4a90e2; text-decoration: none;">احصل على مفتاح API مجاني هنا</a></p>
+    </div>
+    
+    <script>
+        // تحميل المفتاح من localStorage إذا كان موجوداً
+        window.addEventListener('load', function() {
+            const savedKey = localStorage.getItem('deepseek_api_key');
+            if (savedKey) {
+                console.log('✅ تم تحميل مفتاح API من التخزين المحلي');
+            }
+        });
+    </script>
 </body>
 </html>
