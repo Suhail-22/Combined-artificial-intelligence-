@@ -1,13 +1,19 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
-import './index.css'; // ⬅️ أضف هذا إذا كان لديك ملف CSS
 
+// ✅ أبسط نسخة تعمل بدون مشاكل
 const rootElement = document.getElementById('root');
 
-// تحقق إذا كان عنصر الجذر موجود
 if (!rootElement) {
-  throw new Error('Root element not found. Check your index.html file.');
+  // Fallback بسيط
+  document.body.innerHTML = `
+    <div style="padding: 20px; text-align: center; font-family: system-ui;">
+      <h2 style="color: #2563eb">المبرمج الثلاثي</h2>
+      <p>خطأ: لم يتم العثور على عنصر الجذر</p>
+    </div>
+  `;
+  throw new Error('Root element not found');
 }
 
 const root = createRoot(rootElement);
@@ -17,20 +23,8 @@ root.render(
   </React.StrictMode>
 );
 
-// ⬇️ **هذا هو التعديل المهم** ⬇️
-// استبدل loading-splash بـ loading-container
-const loadingContainer = document.querySelector('.loading-container');
-if (loadingContainer) {
-  loadingContainer.style.display = 'none';
-}
-
-// Register Service Worker for PWA
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(registration => {
-      console.log('SW registered: ', registration);
-    }).catch(registrationError => {
-      console.log('SW registration failed: ', registrationError);
-    });
-  });
-}
+// إخفاء شاشة التحميل
+setTimeout(() => {
+  const loading = document.querySelector('.loading-container');
+  if (loading) loading.remove();
+}, 100);
