@@ -1,57 +1,95 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>المبرمج الثلاثي</title>
+    <title>المبرمج الثلاثي - مساعد برمجي ذكي</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    
+    <!-- Open Graph tags for social sharing -->
+    <meta property="og:title" content="المبرمج الثلاثي">
+    <meta property="og:description" content="مساعد برمجي متعدد الشخصيات للتفكير العميق والتصحيح والتحسين">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://combined-artificial-intelligence.vercel.app">
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#2563eb">
+    
+    <!-- Global Styles -->
     <style>
-        body { margin: 0; padding: 20px; font-family: system-ui; }
-        #root { text-align: center; }
-    </style>
-</head>
-<body>
-    <div id="root">
-        <h1 style="color: green">✅ Vercel Build نجح!</h1>
-        <p>المشكلة في ملف JavaScript فقط</p>
-        <div id="app"></div>
-    </div>
-    
-    <!-- اختبار مباشر -->
-    <script>
-        console.log('✅ JavaScript يعمل');
-        document.getElementById('app').innerHTML = `
-            <div style="margin-top: 20px; padding: 20px; background: #f0f9ff; border-radius: 10px;">
-                <p>التطبيق جاهز، المشكلة في استيراد React</p>
-                <button onclick="testReact()">اختبار React</button>
-            </div>
-        `;
-        
-        function testReact() {
-            alert('إذا ظهرت هذه الرسالة، فالمشكلة في React imports');
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-    </script>
-    
-    <!-- جرب ملفات مختلفة -->
-    <script type="module">
-        console.log('جرب تحميل الملف...');
-        // جرب كل احتمال
-        const scripts = [
-            '/src/main.jsx',
-            '/src/main.tsx',
-            '/dist/assets/index.js',
-            '/assets/index.js'
-        ];
         
-        scripts.forEach(src => {
-            const script = document.createElement('script');
-            script.type = 'module';
-            script.src = src;
-            script.onerror = () => console.log(`❌ فشل: ${src}`);
-            document.head.appendChild(script);
-        });
-    </script>
-</body>
-</html>            max-width: 300px;
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #7c3aed;
+            --background-color: #f8fafc;
+            --surface-color: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        body {
+            font-family: 'Noto Sans Arabic', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            direction: rtl;
+            overflow-x: hidden;
+        }
+        
+        #root {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Loading Animation */
+        .loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .loading-subtext {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            max-width: 300px;
             text-align: center;
         }
         
@@ -97,6 +135,76 @@
         }
         
         .retry-button:hover {
+            background-color: #1d4ed8;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .loading-text {
+                font-size: 1.125rem;
+            }
+            
+            .error-title {
+                font-size: 1.25rem;
+            }
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background-color: #0f172a;
+                --surface-color: #1e293b;
+                --text-primary: #f1f5f9;
+                --text-secondary: #cbd5e1;
+                --border-color: #334155;
+            }
+            
+            body {
+                background-color: var(--background-color);
+                color: var(--text-primary);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <!-- Loading State -->
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">جاري تحميل المبرمج الثلاثي...</div>
+            <div class="loading-subtext">مساعدك البرمجي الذكي للتفكير العميق والتحليل</div>
+        </div>
+    </div>
+    
+    <!-- ✅ السطر المصحح -->
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <script>
+        // Handle loading state
+        window.addEventListener('DOMContentLoaded', () => {
+            const root = document.getElementById('root');
+            if (root.children.length === 1) {
+                setTimeout(() => {
+                    const loadingContainer = document.querySelector('.loading-container');
+                    if (loadingContainer && root.children.length === 1) {
+                        loadingContainer.innerHTML = `
+                            <div class="error-state">
+                                <div class="error-icon">⚠️</div>
+                                <div class="error-title">تعذر تحميل التطبيق</div>
+                                <div class="error-message">
+                                    جاري إصلاح التطبيق، حاول مرة أخرى بعد دقيقة.
+                                </div>
+                                <button class="retry-button" onclick="window.location.reload()">
+                                    إعادة المحاولة
+                                </button>
+                            </div>
+                        `;
+                    }
+                }, 5000); // 5 ثواني فقط
+            }
+        });
+    </script>
+</body>
+</html>        .retry-button:hover {
             background-color: #1d4ed8;
         }
         
