@@ -1,102 +1,38 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import './App.css';
 
-// استيراد المكونات من الجذر (باستخدام ../)
-import ChatMessageBubble from '../ChatMessageBubble';
-import Sidebar from '../Sidebar';
-import WorkspacePanel from '../WorkspacePanel';
-import HelpModal from '../HelpModal';
-import PreviewModal from '../PreviewModal';
-import { ErrorBoundary } from '../ErrorBoundary';
-import { BOT_AVATAR, USER_AVATAR, API_URL } from '../constants';
-
-// أنواع البيانات
-interface Message {
-  text: string;
-  sender: 'user' | 'bot';
-  avatar: string;
+function App() {
+  console.log('✅ App component loaded');
+  
+  return (
+    <div style={{ 
+      padding: '40px', 
+      textAlign: 'center',
+      minHeight: '100vh',
+      backgroundColor: '#f8fafc'
+    }}>
+      <h1 style={{ color: '#2563eb', marginBottom: '20px' }}>
+        🎉 المبرمج الثلاثي يعمل!
+      </h1>
+      <p style={{ color: '#64748b', marginBottom: '30px' }}>
+        مساعد برمجي متعدد الشخصيات
+      </p>
+      <div style={{
+        backgroundColor: 'white',
+        padding: '30px',
+        borderRadius: '12px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+        maxWidth: '500px',
+        margin: '0 auto'
+      }}>
+        <h3 style={{ color: '#10b981' }}>✅ التطبيق يعمل بنجاح</h3>
+        <p>يمكنك الآن البدء في إضافة الميزات</p>
+      </div>
+    </div>
+  );
 }
 
-function App() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [previewContent, setPreviewContent] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const handleSend = async () => {
-    if (!input.trim()) return;
-    
-    const userMessage: Message = { 
-      text: input, 
-      sender: 'user', 
-      avatar: USER_AVATAR 
-    };
-    
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-    setIsLoading(true);
-
-    try {
-      // محاكاة للرد (يمكن استبدالها بالاتصال الفعلي بالـ API)
-      setTimeout(() => {
-        const botMessage: Message = { 
-          text: `تم استلام رسالتك: "${input}". هذا رد تجريبي.`, 
-          sender: 'bot', 
-          avatar: BOT_AVATAR 
-        };
-        setMessages(prev => [...prev, botMessage]);
-        setIsLoading(false);
-      }, 1000);
-
-      // للاتصال الفعلي بالـ API (تفعيل لاحقاً):
-      /*
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`
-        },
-        body: JSON.stringify({ 
-          model: "gpt-3.5-turbo",
-          messages: [{ role: "user", content: input }],
-          temperature: 0.7
-        })
-      });
-      
-      const data = await response.json();
-      const botMessage: Message = { 
-        text: data.choices[0].message.content, 
-        sender: 'bot', 
-        avatar: BOT_AVATAR 
-      };
-      setMessages(prev => [...prev, botMessage]);
-      */
-      
-    } catch (error) {
-      console.error('Error:', error);
-      const errorMessage: Message = { 
-        text: 'عذراً، حدث خطأ في الاتصال. تأكد من إعداد مفتاح API.', 
-        sender: 'bot', 
-        avatar: BOT_AVATAR 
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+export default App;  const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
