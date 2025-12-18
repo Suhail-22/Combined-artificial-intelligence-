@@ -1,102 +1,57 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>المبرمج الثلاثي - مساعد برمجي ذكي</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    
-    <!-- Open Graph tags for social sharing -->
-    <meta property="og:title" content="المبرمج الثلاثي">
-    <meta property="og:description" content="مساعد برمجي متعدد الشخصيات للتفكير العميق والتصحيح والتحسين">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://combined-artificial-intelligence.vercel.app">
-    
-    <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json">
-    
-    <!-- Theme Color -->
-    <meta name="theme-color" content="#2563eb">
-    
-    <!-- Preconnect to external APIs -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    
-    <!-- Google Fonts - Arabic Support -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Global Styles -->
+    <title>المبرمج الثلاثي</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        body { margin: 0; padding: 20px; font-family: system-ui; }
+        #root { text-align: center; }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <h1 style="color: green">✅ Vercel Build نجح!</h1>
+        <p>المشكلة في ملف JavaScript فقط</p>
+        <div id="app"></div>
+    </div>
+    
+    <!-- اختبار مباشر -->
+    <script>
+        console.log('✅ JavaScript يعمل');
+        document.getElementById('app').innerHTML = `
+            <div style="margin-top: 20px; padding: 20px; background: #f0f9ff; border-radius: 10px;">
+                <p>التطبيق جاهز، المشكلة في استيراد React</p>
+                <button onclick="testReact()">اختبار React</button>
+            </div>
+        `;
         
-        :root {
-            --primary-color: #2563eb;
-            --secondary-color: #7c3aed;
-            --background-color: #f8fafc;
-            --surface-color: #ffffff;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --border-color: #e2e8f0;
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        function testReact() {
+            alert('إذا ظهرت هذه الرسالة، فالمشكلة في React imports');
         }
+    </script>
+    
+    <!-- جرب ملفات مختلفة -->
+    <script type="module">
+        console.log('جرب تحميل الملف...');
+        // جرب كل احتمال
+        const scripts = [
+            '/src/main.jsx',
+            '/src/main.tsx',
+            '/dist/assets/index.js',
+            '/assets/index.js'
+        ];
         
-        body {
-            font-family: 'Noto Sans Arabic', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-primary);
-            line-height: 1.6;
-            direction: rtl;
-            overflow-x: hidden;
-        }
-        
-        #root {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        /* Loading Animation */
-        .loading-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-        
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid var(--border-color);
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .loading-text {
-            font-size: 1.25rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-        
-        .loading-subtext {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            max-width: 300px;
+        scripts.forEach(src => {
+            const script = document.createElement('script');
+            script.type = 'module';
+            script.src = src;
+            script.onerror = () => console.log(`❌ فشل: ${src}`);
+            document.head.appendChild(script);
+        });
+    </script>
+</body>
+</html>            max-width: 300px;
             text-align: center;
         }
         
