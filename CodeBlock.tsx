@@ -37,8 +37,9 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({ content, folders, onSaveSn
           const prismClass = `language-${lang === 'js' ? 'javascript' : lang === 'ts' ? 'typescript' : lang}`;
 
           return (
-            <div key={index} className="my-4 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-[#282c34] shadow-md" dir="ltr">
-              <div className="flex items-center justify-between px-3 py-2 bg-[#21252b] border-b border-slate-700">
+            <div key={index} className="my-4 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-[#282c34] shadow-md flex flex-col max-h-[500px]" dir="ltr">
+              {/* Sticky Header - Floating Toolbar */}
+              <div className="sticky top-0 z-10 flex items-center justify-between px-3 py-2 bg-[#21252b] border-b border-slate-700 backdrop-blur-sm bg-opacity-95">
                 <span className="text-xs font-mono text-slate-400 font-bold uppercase select-none">{lang}</span>
                 <div className="flex items-center gap-2">
                   {isWeb && (
@@ -51,8 +52,10 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({ content, folders, onSaveSn
                   </button>
                 </div>
               </div>
-              <div className="relative">
-                <pre className={`${prismClass} !m-0 !p-4 !bg-[#282c34] !text-sm overflow-x-auto`} style={{ margin: 0 }}>
+              
+              {/* Scrollable Content Area */}
+              <div className="relative overflow-y-auto custom-scrollbar">
+                <pre className={`${prismClass} !m-0 !p-4 !bg-[#282c34] !text-sm`} style={{ margin: 0, minHeight: '100%' }}>
                     <code className={prismClass}>{code}</code>
                 </pre>
               </div>
